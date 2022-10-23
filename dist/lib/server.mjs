@@ -9,8 +9,7 @@ import { createConfig } from './loadConfig.mjs';
 import { getPathStat, filePathWithoutExtension } from './helpers/common.mjs';
 import { createWatcher } from './Watcher.mjs';
 import { createRollupWatchAwaiter } from './buildRollup.mjs';
-import { importModule } from './importModule.cjs';
-import url from 'url';
+import loadAndParseConfigFile from 'rollup/dist/loadConfigFile';
 import './prepareBuildFilesOptions.mjs';
 import 'postcss-load-config';
 import 'globby';
@@ -61,7 +60,7 @@ function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rol
             bundleSrcPath = path.resolve(rollupBundleSrcPath);
             svelteFiles = new Set();
             yield writeBundleSrc();
-            const rollupConfig = yield importModule(url.pathToFileURL(path.resolve(rollupConfigPath)));
+            const { options: rollupConfig } = yield loadAndParseConfigFile(path.resolve(rollupConfigPath));
             const rollupWatcher = watch(rollupConfig);
             rollupWatcherAwaiter = createRollupWatchAwaiter(rollupWatcher);
         }

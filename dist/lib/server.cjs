@@ -13,8 +13,7 @@ var loadConfig = require('./loadConfig.cjs');
 var helpers_common = require('./helpers/common.cjs');
 var Watcher = require('./Watcher.cjs');
 var buildRollup = require('./buildRollup.cjs');
-var importModule_cjs = require('./importModule.cjs');
-var url = require('url');
+var loadAndParseConfigFile = require('rollup/dist/loadConfigFile');
 require('./prepareBuildFilesOptions.cjs');
 require('postcss-load-config');
 require('globby');
@@ -32,7 +31,7 @@ var path__default = /*#__PURE__*/_interopDefaultLegacy(path);
 var fse__default = /*#__PURE__*/_interopDefaultLegacy(fse);
 var multimatch__default = /*#__PURE__*/_interopDefaultLegacy(multimatch);
 var _liveReload__default = /*#__PURE__*/_interopDefaultLegacy(_liveReload);
-var url__default = /*#__PURE__*/_interopDefaultLegacy(url);
+var loadAndParseConfigFile__default = /*#__PURE__*/_interopDefaultLegacy(loadAndParseConfigFile);
 
 function requireNoCache(module) {
     delete require.cache[require.resolve(module)];
@@ -74,7 +73,7 @@ function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rol
             bundleSrcPath = path__default["default"].resolve(rollupBundleSrcPath);
             svelteFiles = new Set();
             yield writeBundleSrc();
-            const rollupConfig = yield importModule_cjs.importModule(url__default["default"].pathToFileURL(path__default["default"].resolve(rollupConfigPath)));
+            const { options: rollupConfig } = yield loadAndParseConfigFile__default["default"](path__default["default"].resolve(rollupConfigPath));
             const rollupWatcher = rollup.watch(rollupConfig);
             rollupWatcherAwaiter = buildRollup.createRollupWatchAwaiter(rollupWatcher);
         }
