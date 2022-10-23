@@ -6,7 +6,7 @@ import {watch} from 'rollup'
 import multimatch from 'multimatch'
 import _liveReload from '@flemist/easy-livereload'
 import {Config, createConfig} from './loadConfig'
-import {filePathWithoutExtension, getPathStat} from 'src/helpers/common'
+import {filePathWithoutExtension, getPathStat, normalizePath} from 'src/helpers/common'
 import {createWatcher} from 'src/Watcher'
 import {SourceMapType} from 'src/prepareBuildFilesOptions'
 import {createRollupWatchAwaiter, RollupWatcherAwaiter} from 'src/buildRollup'
@@ -75,7 +75,7 @@ async function _startServer({
   let rollupWatcherAwaiter: RollupWatcherAwaiter
 
   function writeBundleSrc() {
-    const bundleSrcContent = Array.from(svelteFiles).map((filePath) => `import ${filePath}`).join('\r\n')
+    const bundleSrcContent = Array.from(svelteFiles).map((filePath) => `import '${normalizePath(filePath)}'`).join('\r\n')
     return fse.writeFile(bundleSrcPath, bundleSrcContent, {encoding: 'utf-8'})
   }
 
@@ -148,7 +148,6 @@ async function _startServer({
               return filePath
             }
             if (i >= indexFiles.length) {
-              res.status(404).send('Not Found:\r\n' + filePaths.join('\r\n'))
               return null
             }
             newFilePath = path.join(filePath, indexFiles[i])
@@ -283,7 +282,10 @@ ${html}
         if (buildFilePath) {
           res.set('Cache-Control', 'no-store')
           res.sendFile(buildFilePath)
+          return
         }
+
+        res.status(404).send('Not Found:\r\n' + filePaths.join('\r\n'))
       },
     )
 

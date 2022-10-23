@@ -6,7 +6,7 @@ import { watch } from 'rollup';
 import multimatch from 'multimatch';
 import _liveReload from '@flemist/easy-livereload';
 import { createConfig } from './loadConfig.mjs';
-import { getPathStat, filePathWithoutExtension } from './helpers/common.mjs';
+import { getPathStat, filePathWithoutExtension, normalizePath } from './helpers/common.mjs';
 import { createWatcher } from './Watcher.mjs';
 import { createRollupWatchAwaiter } from './buildRollup.mjs';
 import loadAndParseConfigFile from 'rollup/dist/loadConfigFile';
@@ -47,7 +47,7 @@ function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rol
         let svelteFiles;
         let rollupWatcherAwaiter;
         function writeBundleSrc() {
-            const bundleSrcContent = Array.from(svelteFiles).map((filePath) => `import ${filePath}`).join('\r\n');
+            const bundleSrcContent = Array.from(svelteFiles).map((filePath) => `import '${normalizePath(filePath)}'`).join('\r\n');
             return fse.writeFile(bundleSrcPath, bundleSrcContent, { encoding: 'utf-8' });
         }
         function updateAndWaitBundle() {
@@ -113,7 +113,6 @@ function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rol
                                 return filePath;
                             }
                             if (i >= indexFiles.length) {
-                                res.status(404).send('Not Found:\r\n' + filePaths.join('\r\n'));
                                 return null;
                             }
                             newFilePath = path.join(filePath, indexFiles[i]);
@@ -240,7 +239,9 @@ ${html}
                 if (buildFilePath) {
                     res.set('Cache-Control', 'no-store');
                     res.sendFile(buildFilePath);
+                    return;
                 }
+                res.status(404).send('Not Found:\r\n' + filePaths.join('\r\n'));
             });
         });
         server
