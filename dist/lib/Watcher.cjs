@@ -246,6 +246,7 @@ class Watcher {
             patterns.forEach(pattern => {
                 this._patterns.add(pattern);
             });
+            yield this.init();
             const inputFiles = yield globby__default["default"](patterns);
             inputFiles.forEach(file => {
                 helpers_common.forEachParentDirs(path__default["default"].dirname(file), dir => {

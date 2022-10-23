@@ -284,6 +284,8 @@ export class Watcher {
       this._patterns.add(pattern)
     })
 
+    await this.init()
+
     const inputFiles = await globby(patterns)
 
     inputFiles.forEach(file => {
