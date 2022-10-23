@@ -87,7 +87,7 @@ async function _startServer({
     bundleSrcPath = path.resolve(rollupBundleSrcPath)
     svelteFiles = new Set<string>()
     await writeBundleSrc()
-    const rollupConfig = require(path.resolve(rollupConfigPath))
+    const rollupConfig = await import(path.resolve(rollupConfigPath))
     const rollupWatcher = watch(rollupConfig)
     rollupWatcherAwaiter = createRollupWatchAwaiter(rollupWatcher)
   }

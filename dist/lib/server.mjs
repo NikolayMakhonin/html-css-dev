@@ -59,7 +59,7 @@ function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rol
             bundleSrcPath = path.resolve(rollupBundleSrcPath);
             svelteFiles = new Set();
             yield writeBundleSrc();
-            const rollupConfig = require(path.resolve(rollupConfigPath));
+            const rollupConfig = yield import(path.resolve(rollupConfigPath));
             const rollupWatcher = watch(rollupConfig);
             rollupWatcherAwaiter = createRollupWatchAwaiter(rollupWatcher);
         }

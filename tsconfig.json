@@ -14,7 +14,7 @@
   ],
   "compilerOptions": {
     "target": "es6",
-    "module": "es6",
+    "module": "es2020",
     "isolatedModules": false,
     "declaration": false,
     "emitDeclarationOnly": true,
