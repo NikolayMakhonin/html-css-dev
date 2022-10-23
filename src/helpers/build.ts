@@ -33,7 +33,7 @@ export async function buildCss({
     const source = await fse.readFile(inputFile, { encoding: 'utf-8' })
     const map = postcssConfig && postcssConfig.options && postcssConfig.options.map
 
-    const result = postcss([
+    const result = await postcss([
       ...postcssConfig && postcssConfig.plugins,
       postcssRemoveGlobal(),
     ])
@@ -44,7 +44,6 @@ export async function buildCss({
         to  : outputFile,
       })
 
-    // @ts-expect-error
     result.css = result.css.replace(
       new RegExp(`\\burl\\((${
         escapeRegExp(path.resolve('.'))

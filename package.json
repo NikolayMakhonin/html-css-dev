@@ -5,6 +5,19 @@
   "main": "dist/lib/index.cjs",
   "module": "dist/lib/index.mjs",
   "types": "dist/lib/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "types": "./dist/lib/index.d.ts",
+      "import": "./dist/lib/index.mjs",
+      "require": "./dist/lib/index.cjs"
+    },
+    "./server": {
+      "types": "./dist/lib/cli/server.d.ts",
+      "import": "./dist/lib/cli/server.mjs",
+      "require": "./dist/lib/cli/server.cjs"
+    }
+  },
   "engines": {
     "node": ">=10.4.0",
     "pnpm": "^7.1.6"
@@ -86,7 +99,6 @@
     "@flemist/web-logger": "2.0.2",
     "express": "4.18.2",
     "fs-extra": "10.0.0",
-    "globby": "11.0.4",
     "multimatch": "5.0.0",
     "node-watch": "0.7.3",
     "postcss-load-config": "3.1.0",

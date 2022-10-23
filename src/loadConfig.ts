@@ -1,18 +1,19 @@
 import path from 'path'
-import {PrepareBuildFilesOptionsArgs} from 'src/prepareBuildFilesOptions'
 import {StartServerArgs} from 'src/server'
+import {BuildArgs} from 'src/build'
 
 process.env.WEB_DEV = 'true'
 
 export type Config = {
-  build?: PrepareBuildFilesOptionsArgs,
+  build?: BuildArgs,
   server?: StartServerArgs,
 }
 
 const _configDefault: Config = {
   build: {
-    inputDir : void 0,
-    outputDir: void 0,
+    inputDir     : void 0,
+    outputDir    : void 0,
+    filesPatterns: [],
   },
   server: {
     srcDir         : void 0,
@@ -21,7 +22,7 @@ const _configDefault: Config = {
     svelteServerDir: void 0,
     svelteClientUrl: void 0,
     port           : 3522,
-    liveReload     : true,
+    liveReload     : false,
     liveReloadPort : 34426,
     rootDir        : '.',
     watchPatterns  : ['**'],

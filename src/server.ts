@@ -3,7 +3,7 @@ import path from 'path'
 import fse from 'fs-extra'
 import multimatch from 'multimatch'
 import _liveReload from '@flemist/easy-livereload'
-import {createConfig} from './loadConfig'
+import {Config, createConfig} from './loadConfig'
 import {filePathWithoutExtension, getPathStat} from 'src/helpers/common'
 import {createWatcher} from 'src/Watcher'
 import {SourceMapType} from 'src/prepareBuildFilesOptions'
@@ -42,7 +42,8 @@ async function _startServer({
   watchPatterns,
 }: StartServerArgs) {
   const unhandledErrorsCode = await fse.readFile(
-    require.resolve('@flemist/web-logger/dist/bundle/unhandled-errors.min'),
+    // eslint-disable-next-line node/no-missing-require
+    require.resolve('@flemist/web-logger/unhandled-errors.min'),
     {encoding: 'utf-8'},
   )
 
@@ -212,13 +213,13 @@ ${html}
         // endregion
 
         const sourceFilePath = path.resolve('.' + req.path)
-        if (/\.p?css(\.map)?$/.test(req.path)) {
-          await watcher.watchFiles({
-            filesPatterns: [
-              filePathWithoutExtension(sourceFilePath) + '{pcss,css}',
-            ],
-          })
-        }
+        await watcher.watchFiles({
+          filesPatterns: [
+            /\.p?css(\.map)?$/.test(req.path)
+              ? filePathWithoutExtension(sourceFilePath) + '.{pcss,css,css.map}'
+              : sourceFilePath,
+          ],
+        })
 
         // region Search index files
 
@@ -252,7 +253,7 @@ ${html}
     })
 }
 
-export function startServer(args: StartServerArgs & { baseConfig: any }) {
+export function startServer(args: StartServerArgs & { baseConfig: Config }) {
   const options = createConfig(args.baseConfig, { server: args })
   return _startServer(options.server)
 }

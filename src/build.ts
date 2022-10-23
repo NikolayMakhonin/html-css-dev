@@ -3,7 +3,7 @@ import globby from 'globby'
 import {prepareBuildFileOptions} from 'src/prepareBuildFileOptions'
 import {buildFile} from 'src/helpers/build'
 import {Watcher} from 'src/Watcher'
-import {createConfig} from './loadConfig'
+import {Config, createConfig} from './loadConfig'
 import {prepareGlobPatterns} from 'src/helpers/common'
 
 export async function buildFiles({
@@ -27,10 +27,10 @@ export async function buildFiles({
   ])
 }
 
-type BuildArgs = PrepareBuildFilesOptionsArgs & {
-  baseConfig: any,
+export type BuildArgs = PrepareBuildFilesOptionsArgs & {
+  baseConfig?: Config,
   filesPatterns: string[],
-  watch: boolean,
+  watch?: boolean,
 }
 
 async function _build(args: BuildArgs) {

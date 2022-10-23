@@ -8,8 +8,8 @@ export function normalizePath(filepath: string) {
 export function prepareGlobPatterns(inputDir: string, filesPatterns: string[]) {
   return filesPatterns.map(pattern => {
     return normalizePath(pattern.startsWith('!')
-      ? '!' + path.join(inputDir, pattern.substring(1))
-      : path.join(inputDir, pattern))
+      ? '!' + path.resolve(inputDir, pattern.substring(1))
+      : path.resolve(inputDir, pattern))
   })
 }
 
