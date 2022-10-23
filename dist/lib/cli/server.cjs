@@ -23,6 +23,8 @@ require('@flemist/postcss-remove-global');
 require('node-watch');
 require('../buildRollup.cjs');
 require('@flemist/async-utils');
+require('../importModule.cjs');
+require('url');
 
 function startServerCli(options) {
     server.startServer(options)

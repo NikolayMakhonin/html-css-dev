@@ -13,6 +13,8 @@ var loadConfig = require('./loadConfig.cjs');
 var helpers_common = require('./helpers/common.cjs');
 var Watcher = require('./Watcher.cjs');
 var buildRollup = require('./buildRollup.cjs');
+var importModule_cjs = require('./importModule.cjs');
+var url = require('url');
 require('./prepareBuildFilesOptions.cjs');
 require('postcss-load-config');
 require('globby');
@@ -25,29 +27,12 @@ require('@flemist/async-utils');
 
 function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
 
-function _interopNamespace(e) {
-    if (e && e.__esModule) return e;
-    var n = Object.create(null);
-    if (e) {
-        Object.keys(e).forEach(function (k) {
-            if (k !== 'default') {
-                var d = Object.getOwnPropertyDescriptor(e, k);
-                Object.defineProperty(n, k, d.get ? d : {
-                    enumerable: true,
-                    get: function () { return e[k]; }
-                });
-            }
-        });
-    }
-    n["default"] = e;
-    return Object.freeze(n);
-}
-
 var express__default = /*#__PURE__*/_interopDefaultLegacy(express);
 var path__default = /*#__PURE__*/_interopDefaultLegacy(path);
 var fse__default = /*#__PURE__*/_interopDefaultLegacy(fse);
 var multimatch__default = /*#__PURE__*/_interopDefaultLegacy(multimatch);
 var _liveReload__default = /*#__PURE__*/_interopDefaultLegacy(_liveReload);
+var url__default = /*#__PURE__*/_interopDefaultLegacy(url);
 
 function requireNoCache(module) {
     delete require.cache[require.resolve(module)];
@@ -89,7 +74,7 @@ function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rol
             bundleSrcPath = path__default["default"].resolve(rollupBundleSrcPath);
             svelteFiles = new Set();
             yield writeBundleSrc();
-            const rollupConfig = yield (function (t) { return Promise.resolve().then(function () { return /*#__PURE__*/_interopNamespace(require(t)); }); })(path__default["default"].resolve(rollupConfigPath));
+            const rollupConfig = yield importModule_cjs.importModule(url__default["default"].pathToFileURL(path__default["default"].resolve(rollupConfigPath)));
             const rollupWatcher = rollup.watch(rollupConfig);
             rollupWatcherAwaiter = buildRollup.createRollupWatchAwaiter(rollupWatcher);
         }

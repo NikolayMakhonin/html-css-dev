@@ -19,6 +19,8 @@ import '@flemist/postcss-remove-global';
 import 'node-watch';
 import '../buildRollup.mjs';
 import '@flemist/async-utils';
+import '../importModule.cjs';
+import 'url';
 
 function startServerCli(options) {
     startServer(options)

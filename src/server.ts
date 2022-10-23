@@ -10,6 +10,8 @@ import {filePathWithoutExtension, getPathStat} from 'src/helpers/common'
 import {createWatcher} from 'src/Watcher'
 import {SourceMapType} from 'src/prepareBuildFilesOptions'
 import {createRollupWatchAwaiter, RollupWatcherAwaiter} from 'src/buildRollup'
+import {importModule} from './importModule.cjs'
+import url from 'url'
 
 function requireNoCache(module) {
   delete require.cache[require.resolve(module)]
@@ -87,7 +89,7 @@ async function _startServer({
     bundleSrcPath = path.resolve(rollupBundleSrcPath)
     svelteFiles = new Set<string>()
     await writeBundleSrc()
-    const rollupConfig = await import(path.resolve(rollupConfigPath))
+    const rollupConfig = await importModule(url.pathToFileURL(path.resolve(rollupConfigPath)))
     const rollupWatcher = watch(rollupConfig)
     rollupWatcherAwaiter = createRollupWatchAwaiter(rollupWatcher)
   }
