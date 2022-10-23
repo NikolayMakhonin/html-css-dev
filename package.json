@@ -58,6 +58,7 @@
     "@rollup/plugin-typescript": "8.3.3",
     "@rollup/pluginutils": "4.2.1",
     "@types/assert": "1.5.6",
+    "@types/fs-extra": "9.0.13",
     "@types/mocha": "9.1.1",
     "@types/node": "18.0.0",
     "@zerollup/ts-transform-paths": "1.7.18",
@@ -67,6 +68,7 @@
     "globby": "=11.1.0",
     "mocha": "9.2.2",
     "nyc": "15.1.0",
+    "postcss": "8.4.18",
     "rdtsc": "3.0.3",
     "rimraf": "3.0.2",
     "rollup": "2.75.7",
@@ -78,6 +80,12 @@
     "typescript": "=4.7.4"
   },
   "dependencies": {
-    "tslib": "^2.4.0"
+    "tslib": "^2.4.0",
+    "@flemist/postcss-remove-global": "0.1.6",
+    "fs-extra": "10.0.0",
+    "globby": "11.0.4",
+    "multimatch": "5.0.0",
+    "node-watch": "0.7.3",
+    "postcss-load-config": "3.1.0"
   }
 }
