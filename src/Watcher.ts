@@ -1,4 +1,4 @@
-import {BuildFilesOptions} from 'src/prepareBuildFilesOptions'
+import {BuildFilesOptions, prepareBuildFilesOptions, PrepareBuildFilesOptionsArgs} from 'src/prepareBuildFilesOptions'
 import {
   forEachParentDirs,
   getDirPaths,
@@ -316,4 +316,9 @@ export class Watcher {
     //   }))
     // }
   }
+}
+
+export async function createWatcher(args: PrepareBuildFilesOptionsArgs): Promise<Watcher> {
+  const options = await prepareBuildFilesOptions(args)
+  return new Watcher(options)
 }

@@ -4,7 +4,9 @@ import fse from 'fs-extra'
 import multimatch from 'multimatch'
 import _liveReload from '@flemist/easy-livereload'
 import {createConfig} from './loadConfig'
-import {getPathStat} from 'src/helpers/common'
+import {filePathWithoutExtension, getPathStat} from 'src/helpers/common'
+import {createWatcher} from 'src/Watcher'
+import {SourceMapType} from 'src/prepareBuildFilesOptions'
 
 
 function requireNoCache(module) {
@@ -12,17 +14,33 @@ function requireNoCache(module) {
   return require(module)
 }
 
+export type StartServerArgs = {
+  port: number,
+  liveReload: boolean,
+  liveReloadPort: number,
+  sourceMap: SourceMapType,
+  srcDir: string,
+  publicDir: string,
+  rootDir: string,
+  svelteRootUrl: string,
+  svelteClientUrl: string,
+  svelteServerDir: string,
+  watchPatterns: string[],
+}
+
 async function _startServer({
   port,
   liveReload,
   liveReloadPort,
+  sourceMap,
+  srcDir,
   publicDir,
   rootDir,
   svelteRootUrl,
   svelteClientUrl,
   svelteServerDir,
   watchPatterns,
-}) {
+}: StartServerArgs) {
   const unhandledErrorsCode = await fse.readFile(
     require.resolve('@flemist/web-logger/dist/bundle/unhandled-errors.min'),
     {encoding: 'utf-8'},
@@ -35,6 +53,14 @@ async function _startServer({
     await fse.mkdirp(publicDir)
   }
   svelteServerDir = svelteServerDir && path.resolve(svelteServerDir)
+
+  const watcher = await createWatcher({
+    inputDir : srcDir,
+    outputDir: path.join(publicDir, path.relative('.', srcDir)),
+    sourceMap,
+    clear    : false,
+    watchDirs: [],
+  })
 
   console.debug('port=', port)
   console.debug('publicDir=', publicDir)
@@ -185,6 +211,15 @@ ${html}
 
         // endregion
 
+        const sourceFilePath = path.resolve('.' + req.path)
+        if (/\.p?css(\.map)?$/.test(req.path)) {
+          await watcher.watchFiles({
+            filesPatterns: [
+              filePathWithoutExtension(sourceFilePath) + '{pcss,css}',
+            ],
+          })
+        }
+
         // region Search index files
 
         let filePath = path.resolve(publicDir + req.path)
@@ -217,16 +252,7 @@ ${html}
     })
 }
 
-function startServer(options) {
+export function startServer(options) {
   options = createConfig(options.baseConfig, { server: options })
-  _startServer(options.server)
-    .catch(err => {
-      console.error(err)
-      // eslint-disable-next-line node/no-process-exit
-      process.exit(1)
-    })
+  return _startServer(options.server)
 }
-
-startServer.startServer = _startServer
-
-module.exports = startServer

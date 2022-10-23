@@ -3,12 +3,13 @@ import fse from 'fs-extra'
 import postcssLoadConfig from 'postcss-load-config'
 import {PostcssConfig} from 'src/contracts'
 
+export type SourceMapType = boolean | 'inline'
+
 export type PrepareBuildFilesOptionsArgs = {
   inputDir: string,
   outputDir: string,
   watchDirs: string[],
-  filesPatterns: string[],
-  map: boolean | 'inline', // TODO: rename
+  sourceMap: SourceMapType,
   clear: boolean,
 }
 
@@ -23,8 +24,7 @@ export async function prepareBuildFilesOptions({
   inputDir,
   outputDir,
   watchDirs,
-  filesPatterns,
-  map,
+  sourceMap,
   clear,
 }: PrepareBuildFilesOptionsArgs): Promise<BuildFilesOptions> {
   inputDir = path.resolve(inputDir)
@@ -40,8 +40,8 @@ export async function prepareBuildFilesOptions({
       }),
     (async () => {
       postcssConfig = await postcssLoadConfig({
-        map: map === true ? {inline: false}
-          : map === 'inline' ? {inline: true}
+        map: sourceMap === true ? {inline: false}
+          : sourceMap === 'inline' ? {inline: true}
             : null,
       })
     })(),
