@@ -138,7 +138,40 @@ async function _startServer({
 
         const filePaths = []
 
-        const sourceFilePath = path.resolve('.' + req.path)
+        async function resolveFilePath(filePath) {
+          let newFilePath = filePath
+          let i = 0
+          while (true) {
+            filePaths.push(filePath)
+            if (await fileExists(newFilePath)) {
+              filePath = newFilePath
+              return filePath
+            }
+            if (i >= indexFiles.length) {
+              res.status(404).send('Not Found:\r\n' + filePaths.join('\r\n'))
+              return null
+            }
+            newFilePath = path.join(filePath, indexFiles[i])
+            i++
+          }
+        }
+
+        const sourceFilePath = await resolveFilePath(path.resolve('.' + req.path))
+        if (sourceFilePath) {
+          if (svelteServerDir && /\.(svelte)$/.test(req.path)) {
+            svelteFiles.add(sourceFilePath)
+            await updateAndWaitBundle()
+          }
+          else {
+            await watcher.watchFiles({
+              filesPatterns: [
+                /\.p?css(\.map)?$/.test(req.path)
+                  ? filePathWithoutExtension(sourceFilePath) + '.{pcss,css,css.map}'
+                  : sourceFilePath,
+              ],
+            })
+          }
+        }
 
         // region Search svelte file
 
@@ -150,9 +183,6 @@ async function _startServer({
           const urlPath = _path.replace(/\.svelte$/, '')
           const filePath = path.resolve(svelteServerDir + urlPath + '.js')
           filePaths.push(filePath)
-
-          svelteFiles.add(filePath)
-          await updateAndWaitBundle()
 
           if (await getPathStat(filePath)) {
             const Component = requireNoCache(filePath).default
@@ -248,37 +278,12 @@ ${html}
 
         // endregion
 
-        await watcher.watchFiles({
-          filesPatterns: [
-            /\.p?css(\.map)?$/.test(req.path)
-              ? filePathWithoutExtension(sourceFilePath) + '.{pcss,css,css.map}'
-              : sourceFilePath,
-          ],
-        })
+        const buildFilePath = await resolveFilePath(path.resolve(publicDir + req.path))
 
-        // region Search index files
-
-        let filePath = path.resolve(publicDir + req.path)
-
-        let newFilePath = filePath
-        let i = 0
-        while (true) {
-          filePaths.push(filePath)
-          if (await fileExists(newFilePath)) {
-            filePath = newFilePath
-            res.set('Cache-Control', 'no-store')
-            res.sendFile(filePath)
-            return
-          }
-          if (i >= indexFiles.length) {
-            res.status(404).send('Not Found:\r\n' + filePaths.join('\r\n'))
-            return
-          }
-          newFilePath = path.join(filePath, indexFiles[i])
-          i++
+        if (buildFilePath) {
+          res.set('Cache-Control', 'no-store')
+          res.sendFile(buildFilePath)
         }
-
-        // endregion
       },
     )
 

@@ -115,7 +115,41 @@ function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rol
                     return;
                 }
                 const filePaths = [];
-                const sourceFilePath = path__default["default"].resolve('.' + req.path);
+                function resolveFilePath(filePath) {
+                    return tslib.__awaiter(this, void 0, void 0, function* () {
+                        let newFilePath = filePath;
+                        let i = 0;
+                        while (true) {
+                            filePaths.push(filePath);
+                            if (yield fileExists(newFilePath)) {
+                                filePath = newFilePath;
+                                return filePath;
+                            }
+                            if (i >= indexFiles.length) {
+                                res.status(404).send('Not Found:\r\n' + filePaths.join('\r\n'));
+                                return null;
+                            }
+                            newFilePath = path__default["default"].join(filePath, indexFiles[i]);
+                            i++;
+                        }
+                    });
+                }
+                const sourceFilePath = yield resolveFilePath(path__default["default"].resolve('.' + req.path));
+                if (sourceFilePath) {
+                    if (svelteServerDir && /\.(svelte)$/.test(req.path)) {
+                        svelteFiles.add(sourceFilePath);
+                        yield updateAndWaitBundle();
+                    }
+                    else {
+                        yield watcher.watchFiles({
+                            filesPatterns: [
+                                /\.p?css(\.map)?$/.test(req.path)
+                                    ? helpers_common.filePathWithoutExtension(sourceFilePath) + '.{pcss,css,css.map}'
+                                    : sourceFilePath,
+                            ],
+                        });
+                    }
+                }
                 // region Search svelte file
                 if (svelteServerDir && /\.(svelte)$/.test(req.path)) {
                     const _path = svelteRootUrl && (req.path.startsWith(svelteRootUrl + '/') || req.path === svelteRootUrl)
@@ -124,8 +158,6 @@ function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rol
                     const urlPath = _path.replace(/\.svelte$/, '');
                     const filePath = path__default["default"].resolve(svelteServerDir + urlPath + '.js');
                     filePaths.push(filePath);
-                    svelteFiles.add(filePath);
-                    yield updateAndWaitBundle();
                     if (yield helpers_common.getPathStat(filePath)) {
                         const Component = requireNoCache(filePath).default;
                         const { head, html } = Component.render();
@@ -217,33 +249,11 @@ ${html}
                     }
                 }
                 // endregion
-                yield watcher.watchFiles({
-                    filesPatterns: [
-                        /\.p?css(\.map)?$/.test(req.path)
-                            ? helpers_common.filePathWithoutExtension(sourceFilePath) + '.{pcss,css,css.map}'
-                            : sourceFilePath,
-                    ],
-                });
-                // region Search index files
-                let filePath = path__default["default"].resolve(publicDir + req.path);
-                let newFilePath = filePath;
-                let i = 0;
-                while (true) {
-                    filePaths.push(filePath);
-                    if (yield fileExists(newFilePath)) {
-                        filePath = newFilePath;
-                        res.set('Cache-Control', 'no-store');
-                        res.sendFile(filePath);
-                        return;
-                    }
-                    if (i >= indexFiles.length) {
-                        res.status(404).send('Not Found:\r\n' + filePaths.join('\r\n'));
-                        return;
-                    }
-                    newFilePath = path__default["default"].join(filePath, indexFiles[i]);
-                    i++;
+                const buildFilePath = yield resolveFilePath(path__default["default"].resolve(publicDir + req.path));
+                if (buildFilePath) {
+                    res.set('Cache-Control', 'no-store');
+                    res.sendFile(buildFilePath);
                 }
-                // endregion
             });
         });
         server
