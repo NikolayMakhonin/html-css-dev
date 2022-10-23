@@ -8,9 +8,9 @@ export type SourceMapType = boolean | 'inline'
 export type PrepareBuildFilesOptionsArgs = {
   inputDir: string,
   outputDir: string,
-  watchDirs: string[],
-  sourceMap: SourceMapType,
-  clear: boolean,
+  watchDirs?: string[],
+  sourceMap?: SourceMapType,
+  clear?: boolean,
 }
 
 export type BuildFilesOptions = {

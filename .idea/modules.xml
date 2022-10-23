@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/rollup-plugin-css.iml" filepath="$PROJECT_DIR$/.idea/rollup-plugin-css.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/html-css-dev.iml" filepath="$PROJECT_DIR$/.idea/html-css-dev.iml" />
     </modules>
   </component>
 </project>

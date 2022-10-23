@@ -16,16 +16,16 @@ function requireNoCache(module) {
 
 export type StartServerArgs = {
   port: number,
-  liveReload: boolean,
-  liveReloadPort: number,
-  sourceMap: SourceMapType,
+  liveReload?: boolean,
+  liveReloadPort?: number,
+  sourceMap?: SourceMapType,
   srcDir: string,
   publicDir: string,
   rootDir: string,
   svelteRootUrl: string,
   svelteClientUrl: string,
   svelteServerDir: string,
-  watchPatterns: string[],
+  watchPatterns?: string[],
 }
 
 async function _startServer({
@@ -252,7 +252,7 @@ ${html}
     })
 }
 
-export function startServer(options) {
-  options = createConfig(options.baseConfig, { server: options })
+export function startServer(args: StartServerArgs & { baseConfig: any }) {
+  const options = createConfig(args.baseConfig, { server: args })
   return _startServer(options.server)
 }
