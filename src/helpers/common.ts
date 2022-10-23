@@ -103,7 +103,3 @@ export function filePathWithoutExtension(filePath: string) {
 export function escapeRegExp(text: string) {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
-
-export function pathStat(_path: string) {
-  return fse.stat(_path).catch(() => null)
-}

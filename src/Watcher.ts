@@ -4,7 +4,6 @@ import {
   getDirPaths,
   getPathStat,
   normalizePath,
-  pathStat,
   prepareGlobPatterns,
   removePath,
 } from 'src/helpers/common'
@@ -117,7 +116,7 @@ export class Watcher {
 
       // add dependencies
       await Promise.all(Array.from(newDependencies.values()).map(async o => {
-        if (!await pathStat(o)) {
+        if (!await getPathStat(o)) {
           console.warn('Path not exist: ' + o)
         }
         let _dependants = this._allDependencies.get(o)

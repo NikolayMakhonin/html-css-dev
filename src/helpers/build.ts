@@ -1,6 +1,6 @@
 import path from 'path'
 import {PostcssConfig} from 'src/contracts'
-import {escapeRegExp, filePathWithoutExtension, normalizePath, pathStat} from 'src/helpers/common'
+import {escapeRegExp, filePathWithoutExtension, getPathStat, normalizePath} from 'src/helpers/common'
 import fse from 'fs-extra'
 import postcss from 'postcss'
 import postcssRemoveGlobal from '@flemist/postcss-remove-global'
@@ -99,7 +99,7 @@ export async function copyFile({inputFile, outputFile}) {
 
 export async function buildFile({inputFile, outputFile, postcssConfig}) {
   outputFile = normalizePath(path.resolve(outputFile))
-  if (await pathStat(outputFile)) {
+  if (await getPathStat(outputFile)) {
     await fse.rm(outputFile, { recursive: true, force: true })
   }
   const ext = (path.extname(inputFile) || '').toLowerCase()
