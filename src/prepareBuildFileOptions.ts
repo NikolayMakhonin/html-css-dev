@@ -1,5 +1,5 @@
 import path from 'path'
-import {normalizePath} from 'src/helpers'
+import {normalizePath} from 'src/helpers/helpers'
 import {PostcssConfig} from 'src/contracts'
 
 export type PrepareBuildFileOptionsArgs = {

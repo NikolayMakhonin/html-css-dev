@@ -7,24 +7,24 @@ import {
   pathStat,
   prepareGlobPatterns,
   removePath,
-} from 'src/helpers'
+} from 'src/helpers/common'
 import globby from 'globby'
 import path from 'path'
 import multimatch from 'multimatch'
 import {prepareBuildFileOptions} from 'src/prepareBuildFileOptions'
-import {watchFile} from 'src/build'
+import {watchFile} from 'src/helpers/build'
 import nodeWatch from 'node-watch'
 
 type NodeWatchEventType = 'update' | 'remove'
 type NodeWatchEvent = {
 	evt: NodeWatchEventType,
 	path: string,
-	patterns: string[],
 }
 
 export type WatchResult = {
   outputFiles: string[],
   dependencies?: string[],
+  count?: number,
 }
 
 export class Watcher {
@@ -33,19 +33,45 @@ export class Watcher {
   private readonly _dependants = new Map<string, Set<string>>()
   private readonly _watchers = new Map<string, WatchResult>()
   private readonly _dirs = new Set<string>()
+  private readonly _patterns = new Set<string>()
 
   constructor(options: BuildFilesOptions) {
     this.options = options
   }
 
+  private _initPromise: Promise<void>
+  private init() {
+    if (!this._initPromise) {
+      // eslint-disable-next-line @typescript-eslint/require-await
+      this._initPromise = (async () => {
+        this.options.watchDirs.forEach(watchDir => {
+          nodeWatch(watchDir, {
+            recursive: true,
+            delay    : 50,
+          }, (evt, _path) => {
+            this.enqueueEvent(evt, _path)
+          })
+        })
+      })()
+    }
+    return this._initPromise
+
+  }
+
   private fileWatch(file: string) {
+    let watcher = this._watchers[file]
+    if (watcher) {
+      watcher.count++
+      return
+    }
+
     const {
       inputDir,
       outputDir,
       postcssConfig,
     } = this.options
 
-    const watcher = (async () => {
+    watcher = (async () => {
       const watcher: WatchResult = await watchFile(prepareBuildFileOptions(file, {
         inputDir,
         outputDir,
@@ -58,6 +84,10 @@ export class Watcher {
 
       if (!watcher.dependencies) {
         watcher.dependencies = []
+      }
+
+      if (!watcher.count) {
+        watcher.count = 1
       }
 
       const newDependencies = watcher.dependencies && watcher.dependencies
@@ -107,10 +137,15 @@ export class Watcher {
 
   private async fileUnwatch(file: string, remove?: boolean) {
     const watcher = this._watchers[file]
+    watcher.count--
+    if (watcher.count > 0) {
+      return
+    }
     this._watchers[file] = null
     // const watcher = await watcherPromise
     if (remove && watcher && watcher.outputFiles) {
       await Promise.all(watcher.outputFiles.map(removePath))
+      console.log('[Deleted]', file)
     }
   }
 
@@ -131,7 +166,7 @@ export class Watcher {
     }
   }
 
-  private async updateDependants(_path: string, patterns: string[]) {
+  private async updateDependants(_path: string) {
     // await Promise.all(
     // 	Array.from(this._watchers.values())
     // )
@@ -142,7 +177,7 @@ export class Watcher {
       ..._dependants && Array.from(_dependants.values()) || [],
       _path,
     ].map(async (file) => {
-      if (multimatch([file], patterns).length === 0) {
+      if (multimatch([file], Array.from(this._patterns.values())).length === 0) {
         return
       }
       await this.fileUnwatch(file, true)
@@ -154,7 +189,7 @@ export class Watcher {
     }))
   }
 
-  private async onPathChanged(evt: NodeWatchEventType, _path: string, patterns: string[]) {
+  private async onPathChanged(evt: NodeWatchEventType, _path: string) {
     console.log('onPathChanged', evt, _path)
 
     _path = normalizePath(_path)
@@ -175,32 +210,31 @@ export class Watcher {
         Array.from(this._watchers.keys()).map(async file => {
           if (file === _path || file.startsWith(pathAsDir)) {
             await this.fileUnwatch(file, true)
-            console.log('[Deleted]', file)
           }
         }),
       )
-      await this.updateDependants(_path, patterns)
+      await this.updateDependants(_path)
       return
     }
 
     const pathStat = await getPathStat(_path)
     if (pathStat) {
       if (pathStat.isFile()) {
-        await this.updateDependants(_path, patterns)
-        if (multimatch([_path], patterns).length > 0) {
+        await this.updateDependants(_path)
+        if (multimatch([_path], Array.from(this._patterns.values())).length > 0) {
           await this.onFileAdded(_path)
         }
       }
       else if (!this._dirs.has(_path)) {
         // if (!dirs.has(_path)) {
-        await this.updateDependants(_path, patterns)
+        await this.updateDependants(_path)
         // }
         const paths = await getDirPaths(_path)
         // paths.dirs.forEach(o => {
         // 	dirs.add(o)
         // })
         const files = paths.files
-          .filter(o => multimatch([o], patterns).length > 0)
+          .filter(o => multimatch([o], Array.from(this._patterns.values())).length > 0)
         files.forEach(file => {
           forEachParentDirs(path.dirname(file), dir => {
             this._dirs.add(dir)
@@ -212,8 +246,8 @@ export class Watcher {
   }
 
   private readonly _events: NodeWatchEvent[] = []
-  private enqueueEvent(evt: NodeWatchEventType, path: string, patterns: string[]) {
-    this._events.push({evt, path, patterns})
+  private enqueueEvent(evt: NodeWatchEventType, path: string) {
+    this._events.push({evt, path})
     void this.processEvents()
   }
 
@@ -224,9 +258,9 @@ export class Watcher {
     }
     this.processEventsRunning = true
     while (this._events.length > 0) {
-      const {evt, path, patterns} = this._events.shift()
+      const {evt, path} = this._events.shift()
       try {
-        await this.onPathChanged(evt, path, patterns)
+        await this.onPathChanged(evt, path)
       }
       catch (err) {
         console.error(err)
@@ -244,25 +278,18 @@ export class Watcher {
 
     const {
       inputDir,
-      watchDirs,
     } = this.options
 
     const patterns = prepareGlobPatterns(inputDir, filesPatterns)
+    patterns.forEach(pattern => {
+      this._patterns.add(pattern)
+    })
 
     const inputFiles = await globby(patterns)
 
     inputFiles.forEach(file => {
       forEachParentDirs(path.dirname(file), dir => {
         this._dirs.add(dir)
-      })
-    })
-
-    watchDirs.forEach(watchDir => {
-      nodeWatch(watchDir, {
-        recursive: true,
-        delay    : 50,
-      }, (evt, _path) => {
-        this.enqueueEvent(evt, _path, patterns)
       })
     })
 
@@ -284,11 +311,10 @@ export class Watcher {
 
     console.log(`watch started... ${Math.round((Date.now() - timeStart) / 1000)}s`)
 
-    return async () => {
-      await Promise.all(Array.from(this._watchers.keys()).map(file => {
-        return this.fileUnwatch(file)
-      }))
-    }
+    // return async () => {
+    //   await Promise.all(Array.from(this._watchers.keys()).map(file => {
+    //     return this.fileUnwatch(file)
+    //   }))
+    // }
   }
 }
-
