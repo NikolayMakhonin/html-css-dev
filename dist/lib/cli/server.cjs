@@ -7,6 +7,7 @@ require('tslib');
 require('express');
 require('path');
 require('fs-extra');
+require('rollup');
 require('multimatch');
 require('@flemist/easy-livereload');
 require('../loadConfig.cjs');
@@ -20,6 +21,8 @@ require('../helpers/build.cjs');
 require('postcss');
 require('@flemist/postcss-remove-global');
 require('node-watch');
+require('../buildRollup.cjs');
+require('@flemist/async-utils');
 
 function startServerCli(options) {
     server.startServer(options)

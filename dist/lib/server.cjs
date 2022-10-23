@@ -6,11 +6,13 @@ var tslib = require('tslib');
 var express = require('express');
 var path = require('path');
 var fse = require('fs-extra');
+var rollup = require('rollup');
 var multimatch = require('multimatch');
 var _liveReload = require('@flemist/easy-livereload');
 var loadConfig = require('./loadConfig.cjs');
 var helpers_common = require('./helpers/common.cjs');
 var Watcher = require('./Watcher.cjs');
+var buildRollup = require('./buildRollup.cjs');
 require('./prepareBuildFilesOptions.cjs');
 require('postcss-load-config');
 require('globby');
@@ -19,6 +21,7 @@ require('./helpers/build.cjs');
 require('postcss');
 require('@flemist/postcss-remove-global');
 require('node-watch');
+require('@flemist/async-utils');
 
 function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
 
@@ -32,7 +35,7 @@ function requireNoCache(module) {
     delete require.cache[require.resolve(module)];
     return require(module);
 }
-function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, publicDir, rootDir, svelteRootUrl, svelteClientUrl, svelteServerDir, watchPatterns, }) {
+function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rollupConfigPath, rollupBundleSrcPath, publicDir, rootDir, svelteRootUrl, svelteClientUrl, svelteServerDir, watchPatterns, }) {
     return tslib.__awaiter(this, void 0, void 0, function* () {
         const unhandledErrorsCode = yield fse__default["default"].readFile(
         // eslint-disable-next-line node/no-missing-require
@@ -51,6 +54,27 @@ function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, pub
             clear: false,
             watchDirs: [],
         });
+        let bundleSrcPath;
+        let svelteFiles;
+        let rollupWatcherAwaiter;
+        function writeBundleSrc() {
+            const bundleSrcContent = Array.from(svelteFiles).map((filePath) => `import ${filePath}`).join('\r\n');
+            return fse__default["default"].writeFile(bundleSrcPath, bundleSrcContent, { encoding: 'utf-8' });
+        }
+        function updateAndWaitBundle() {
+            return tslib.__awaiter(this, void 0, void 0, function* () {
+                yield writeBundleSrc();
+                return rollupWatcherAwaiter.wait();
+            });
+        }
+        if (rollupConfigPath) {
+            bundleSrcPath = path__default["default"].resolve(rollupBundleSrcPath);
+            svelteFiles = new Set();
+            yield writeBundleSrc();
+            const rollupConfig = require(path__default["default"].resolve(rollupConfigPath));
+            const rollupWatcher = rollup.watch(rollupConfig);
+            rollupWatcherAwaiter = buildRollup.createRollupWatchAwaiter(rollupWatcher);
+        }
         console.debug('port=', port);
         console.debug('publicDir=', publicDir);
         console.debug('rootDir=', rootDir);
@@ -89,6 +113,7 @@ function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, pub
                     return;
                 }
                 const filePaths = [];
+                const sourceFilePath = path__default["default"].resolve('.' + req.path);
                 // region Search svelte file
                 if (svelteServerDir && /\.(svelte)$/.test(req.path)) {
                     const _path = svelteRootUrl && (req.path.startsWith(svelteRootUrl + '/') || req.path === svelteRootUrl)
@@ -97,6 +122,8 @@ function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, pub
                     const urlPath = _path.replace(/\.svelte$/, '');
                     const filePath = path__default["default"].resolve(svelteServerDir + urlPath + '.js');
                     filePaths.push(filePath);
+                    svelteFiles.add(filePath);
+                    yield updateAndWaitBundle();
                     if (yield helpers_common.getPathStat(filePath)) {
                         const Component = requireNoCache(filePath).default;
                         const { head, html } = Component.render();
@@ -188,7 +215,6 @@ ${html}
                     }
                 }
                 // endregion
-                const sourceFilePath = path__default["default"].resolve('.' + req.path);
                 yield watcher.watchFiles({
                     filesPatterns: [
                         /\.p?css(\.map)?$/.test(req.path)

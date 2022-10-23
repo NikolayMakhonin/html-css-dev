@@ -2,11 +2,13 @@ import { __awaiter } from 'tslib';
 import express from 'express';
 import path from 'path';
 import fse from 'fs-extra';
+import { watch } from 'rollup';
 import multimatch from 'multimatch';
 import _liveReload from '@flemist/easy-livereload';
 import { createConfig } from './loadConfig.mjs';
 import { getPathStat, filePathWithoutExtension } from './helpers/common.mjs';
 import { createWatcher } from './Watcher.mjs';
+import { createRollupWatchAwaiter } from './buildRollup.mjs';
 import './prepareBuildFilesOptions.mjs';
 import 'postcss-load-config';
 import 'globby';
@@ -15,12 +17,13 @@ import './helpers/build.mjs';
 import 'postcss';
 import '@flemist/postcss-remove-global';
 import 'node-watch';
+import '@flemist/async-utils';
 
 function requireNoCache(module) {
     delete require.cache[require.resolve(module)];
     return require(module);
 }
-function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, publicDir, rootDir, svelteRootUrl, svelteClientUrl, svelteServerDir, watchPatterns, }) {
+function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rollupConfigPath, rollupBundleSrcPath, publicDir, rootDir, svelteRootUrl, svelteClientUrl, svelteServerDir, watchPatterns, }) {
     return __awaiter(this, void 0, void 0, function* () {
         const unhandledErrorsCode = yield fse.readFile(
         // eslint-disable-next-line node/no-missing-require
@@ -39,6 +42,27 @@ function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, pub
             clear: false,
             watchDirs: [],
         });
+        let bundleSrcPath;
+        let svelteFiles;
+        let rollupWatcherAwaiter;
+        function writeBundleSrc() {
+            const bundleSrcContent = Array.from(svelteFiles).map((filePath) => `import ${filePath}`).join('\r\n');
+            return fse.writeFile(bundleSrcPath, bundleSrcContent, { encoding: 'utf-8' });
+        }
+        function updateAndWaitBundle() {
+            return __awaiter(this, void 0, void 0, function* () {
+                yield writeBundleSrc();
+                return rollupWatcherAwaiter.wait();
+            });
+        }
+        if (rollupConfigPath) {
+            bundleSrcPath = path.resolve(rollupBundleSrcPath);
+            svelteFiles = new Set();
+            yield writeBundleSrc();
+            const rollupConfig = require(path.resolve(rollupConfigPath));
+            const rollupWatcher = watch(rollupConfig);
+            rollupWatcherAwaiter = createRollupWatchAwaiter(rollupWatcher);
+        }
         console.debug('port=', port);
         console.debug('publicDir=', publicDir);
         console.debug('rootDir=', rootDir);
@@ -77,6 +101,7 @@ function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, pub
                     return;
                 }
                 const filePaths = [];
+                const sourceFilePath = path.resolve('.' + req.path);
                 // region Search svelte file
                 if (svelteServerDir && /\.(svelte)$/.test(req.path)) {
                     const _path = svelteRootUrl && (req.path.startsWith(svelteRootUrl + '/') || req.path === svelteRootUrl)
@@ -85,6 +110,8 @@ function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, pub
                     const urlPath = _path.replace(/\.svelte$/, '');
                     const filePath = path.resolve(svelteServerDir + urlPath + '.js');
                     filePaths.push(filePath);
+                    svelteFiles.add(filePath);
+                    yield updateAndWaitBundle();
                     if (yield getPathStat(filePath)) {
                         const Component = requireNoCache(filePath).default;
                         const { head, html } = Component.render();
@@ -176,7 +203,6 @@ ${html}
                     }
                 }
                 // endregion
-                const sourceFilePath = path.resolve('.' + req.path);
                 yield watcher.watchFiles({
                     filesPatterns: [
                         /\.p?css(\.map)?$/.test(req.path)

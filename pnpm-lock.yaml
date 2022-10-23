@@ -1,6 +1,8 @@
 lockfileVersion: 5.4
 
 specifiers:
+  '@flemist/abort-controller-fast': 0.0.6
+  '@flemist/async-utils': 0.0.13
   '@flemist/copy-glob-flat': 0.0.5
   '@flemist/easy-livereload': 1.4.4
   '@flemist/postcss-remove-global': 0.1.6
@@ -15,7 +17,7 @@ specifiers:
   '@rollup/plugin-typescript': 8.3.3
   '@rollup/pluginutils': 4.2.1
   '@types/assert': 1.5.6
-  '@types/express': ^4.17.14
+  '@types/express': 4.17.14
   '@types/fs-extra': 9.0.13
   '@types/mocha': 9.1.1
   '@types/node': 18.0.0
@@ -44,6 +46,8 @@ specifiers:
   typescript: '=4.7.4'
 
 dependencies:
+  '@flemist/abort-controller-fast': 0.0.6
+  '@flemist/async-utils': 0.0.13
   '@flemist/easy-livereload': 1.4.4
   '@flemist/postcss-remove-global': 0.1.6_postcss@8.4.18
   '@flemist/web-logger': 2.0.2
@@ -312,7 +316,21 @@ packages:
     resolution: {integrity: sha512-ewpqfmNx+V5dqTzVBxi7syhhsFRk5ktNOd0d85tKyGkqwzoMyJSYGBPmycYhlUDSsIN/3Nb2EaE0tPOtfw6PNQ==}
     dependencies:
       tslib: 2.4.0
-    dev: true
+
+  /@flemist/abort-controller-fast/0.0.6:
+    resolution: {integrity: sha512-guk6p9Vvey+IM3xt4/YUi1n4iN6TV3xJdOx5nchDOGlvgNBZFfSAXS2LQIFjIeelQ3YjoXwxYxIbvUIzPwTf4Q==}
+    dependencies:
+      tslib: 2.4.0
+    dev: false
+
+  /@flemist/async-utils/0.0.13:
+    resolution: {integrity: sha512-pxGOle7BpEcA5xQaLotJgANmIlWwlHeUMuNiwnRJOmIdTM+yqZHbl9mBVkXYsRhK+SKO44u5CnH2ypMx5D0BOw==}
+    engines: {node: '>=10.4.0', pnpm: ^7.1.6}
+    dependencies:
+      '@flemist/abort-controller-fast': 0.0.5
+      '@flemist/time-controller': 0.0.1
+      tslib: 2.4.0
+    dev: false
 
   /@flemist/copy-glob-flat/0.0.5:
     resolution: {integrity: sha512-nw2x3zS78uRv7jlR709oXiMXhtTlTS2+WJiy3aTabcayv50CNHMKXevv9WR7YjUJzS7743EdPJl5wAKjIq9Fdg==}
@@ -339,7 +357,6 @@ packages:
     engines: {node: '>=10.4.0', pnpm: ^7.1.6}
     dependencies:
       tslib: 2.4.0
-    dev: true
 
   /@flemist/postcss-remove-global/0.1.6_postcss@8.4.18:
     resolution: {integrity: sha512-uH86E5tgl9N942EStAmQSlUqH8uzkZw+Ic735icbf9AVGPaeIpF+2HtC0Yt1vYQyvSyANnF/pS5dyCFKVPQfcg==}
@@ -371,7 +388,6 @@ packages:
     dependencies:
       '@flemist/pairing-heap': 0.0.1
       tslib: 2.4.0
-    dev: true
 
   /@flemist/web-logger/2.0.2:
     resolution: {integrity: sha512-Jx4poJrjCJGRX8N3iiFOshMDw1lVqUv6SyV6FzSxRGt7oEH2VRYetap5GUGDebRNE/88iSkVJlrbt6VbkzEL4w==}

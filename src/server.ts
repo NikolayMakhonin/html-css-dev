@@ -1,13 +1,15 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 import express from 'express'
 import path from 'path'
 import fse from 'fs-extra'
+import {watch} from 'rollup'
 import multimatch from 'multimatch'
 import _liveReload from '@flemist/easy-livereload'
 import {Config, createConfig} from './loadConfig'
 import {filePathWithoutExtension, getPathStat} from 'src/helpers/common'
 import {createWatcher} from 'src/Watcher'
 import {SourceMapType} from 'src/prepareBuildFilesOptions'
-
+import {createRollupWatchAwaiter, RollupWatcherAwaiter} from 'src/buildRollup'
 
 function requireNoCache(module) {
   delete require.cache[require.resolve(module)]
@@ -20,6 +22,8 @@ export type StartServerArgs = {
   liveReloadPort?: number,
   sourceMap?: SourceMapType,
   srcDir: string,
+  rollupConfigPath: string,
+  rollupBundleSrcPath: string,
   publicDir: string,
   rootDir: string,
   svelteRootUrl: string,
@@ -34,6 +38,8 @@ async function _startServer({
   liveReloadPort,
   sourceMap,
   srcDir,
+  rollupConfigPath,
+  rollupBundleSrcPath,
   publicDir,
   rootDir,
   svelteRootUrl,
@@ -62,6 +68,29 @@ async function _startServer({
     clear    : false,
     watchDirs: [],
   })
+
+  let bundleSrcPath: string
+  let svelteFiles: Set<string>
+  let rollupWatcherAwaiter: RollupWatcherAwaiter
+
+  function writeBundleSrc() {
+    const bundleSrcContent = Array.from(svelteFiles).map((filePath) => `import ${filePath}`).join('\r\n')
+    return fse.writeFile(bundleSrcPath, bundleSrcContent, {encoding: 'utf-8'})
+  }
+
+  async function updateAndWaitBundle() {
+    await writeBundleSrc()
+    return rollupWatcherAwaiter.wait()
+  }
+
+  if (rollupConfigPath) {
+    bundleSrcPath = path.resolve(rollupBundleSrcPath)
+    svelteFiles = new Set<string>()
+    await writeBundleSrc()
+    const rollupConfig = require(path.resolve(rollupConfigPath))
+    const rollupWatcher = watch(rollupConfig)
+    rollupWatcherAwaiter = createRollupWatchAwaiter(rollupWatcher)
+  }
 
   console.debug('port=', port)
   console.debug('publicDir=', publicDir)
@@ -108,6 +137,8 @@ async function _startServer({
 
         const filePaths = []
 
+        const sourceFilePath = path.resolve('.' + req.path)
+
         // region Search svelte file
 
         if (svelteServerDir && /\.(svelte)$/.test(req.path)) {
@@ -118,6 +149,10 @@ async function _startServer({
           const urlPath = _path.replace(/\.svelte$/, '')
           const filePath = path.resolve(svelteServerDir + urlPath + '.js')
           filePaths.push(filePath)
+
+          svelteFiles.add(filePath)
+          await updateAndWaitBundle()
+
           if (await getPathStat(filePath)) {
             const Component = requireNoCache(filePath).default
             const { head, html } = Component.render()
@@ -212,7 +247,6 @@ ${html}
 
         // endregion
 
-        const sourceFilePath = path.resolve('.' + req.path)
         await watcher.watchFiles({
           filesPatterns: [
             /\.p?css(\.map)?$/.test(req.path)
