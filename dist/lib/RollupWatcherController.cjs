@@ -60,7 +60,7 @@ function rollupWatch(configs) {
         configs = [configs];
     }
     const watcher = rollup.watch(configs);
-    const wait = createRollupWatchAwaiter(this._watcher);
+    const wait = createRollupWatchAwaiter(watcher);
     return {
         watcher,
         wait,

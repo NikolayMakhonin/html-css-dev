@@ -45,6 +45,7 @@ function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rol
         });
         let rollupConfigs;
         let rollupWatcher;
+        let rollupInput;
         if (rollupConfigPath) {
             const result = yield loadAndParseConfigFile(path.resolve(rollupConfigPath));
             rollupConfigs = result.options;
@@ -108,11 +109,12 @@ function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rol
                 const sourceFilePath = yield resolveFilePath(path.resolve('.' + req.path));
                 if (sourceFilePath) {
                     if (svelteServerDir && /\.(svelte)$/.test(req.path)) {
-                        if (rollupConfigs.some(config => config.input !== sourceFilePath)) {
+                        if (rollupInput !== sourceFilePath) {
+                            rollupInput = sourceFilePath;
                             if (rollupWatcher) {
                                 yield rollupWatcher.watcher.close();
                             }
-                            rollupWatcher = rollupWatch(rollupConfigs.map(config => (Object.assign(Object.assign({}, config), { input: sourceFilePath }))));
+                            rollupWatcher = rollupWatch(rollupConfigs.map(config => (Object.assign(Object.assign({}, config), { input: rollupInput }))));
                         }
                         yield (rollupWatcher === null || rollupWatcher === void 0 ? void 0 : rollupWatcher.wait());
                     }

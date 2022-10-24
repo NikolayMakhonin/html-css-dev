@@ -70,6 +70,7 @@ async function _startServer({
 
   let rollupConfigs: RollupWatchOptions[]
   let rollupWatcher: RollupWatcherExt
+  let rollupInput: string
 
   if (rollupConfigPath) {
     const result = await loadAndParseConfigFile(path.resolve(rollupConfigPath))
@@ -141,13 +142,14 @@ async function _startServer({
         const sourceFilePath = await resolveFilePath(path.resolve('.' + req.path))
         if (sourceFilePath) {
           if (svelteServerDir && /\.(svelte)$/.test(req.path)) {
-            if (rollupConfigs.some(config => config.input !== sourceFilePath)) {
+            if (rollupInput !== sourceFilePath) {
+              rollupInput = sourceFilePath
               if (rollupWatcher) {
                 await rollupWatcher.watcher.close()
               }
               rollupWatcher = rollupWatch(rollupConfigs.map(config => ({
                 ...config,
-                input: sourceFilePath,
+                input: rollupInput,
               })))
             }
             await rollupWatcher?.wait()

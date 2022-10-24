@@ -70,7 +70,7 @@ export function rollupWatch(configs: RollupWatchOptions | RollupWatchOptions[]) 
     configs = [configs]
   }
   const watcher = watch(configs)
-  const wait = createRollupWatchAwaiter(this._watcher)
+  const wait = createRollupWatchAwaiter(watcher)
   return {
     watcher,
     wait,
