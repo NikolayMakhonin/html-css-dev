@@ -3,7 +3,6 @@ import 'tslib';
 import 'express';
 import 'path';
 import 'fs-extra';
-import 'rollup';
 import 'multimatch';
 import '@flemist/easy-livereload';
 import '../loadConfig.mjs';
@@ -17,8 +16,9 @@ import '../helpers/build.mjs';
 import 'postcss';
 import '@flemist/postcss-remove-global';
 import 'node-watch';
-import '../buildRollup.mjs';
+import '../RollupWatcherController.mjs';
 import '@flemist/async-utils';
+import 'rollup';
 import 'rollup/dist/loadConfigFile';
 
 function startServerCli(options) {

@@ -2,13 +2,12 @@ import { __awaiter } from 'tslib';
 import express from 'express';
 import path from 'path';
 import fse from 'fs-extra';
-import { watch } from 'rollup';
 import multimatch from 'multimatch';
 import _liveReload from '@flemist/easy-livereload';
 import { createConfig } from './loadConfig.mjs';
-import { getPathStat, filePathWithoutExtension, normalizePath } from './helpers/common.mjs';
+import { getPathStat, filePathWithoutExtension } from './helpers/common.mjs';
 import { createWatcher } from './Watcher.mjs';
-import { createRollupWatchAwaiter } from './buildRollup.mjs';
+import { rollupWatch } from './RollupWatcherController.mjs';
 import loadAndParseConfigFile from 'rollup/dist/loadConfigFile';
 import './prepareBuildFilesOptions.mjs';
 import 'postcss-load-config';
@@ -19,12 +18,13 @@ import 'postcss';
 import '@flemist/postcss-remove-global';
 import 'node-watch';
 import '@flemist/async-utils';
+import 'rollup';
 
 function requireNoCache(module) {
     delete require.cache[require.resolve(module)];
     return require(module);
 }
-function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rollupConfigPath, rollupBundleSrcPath, publicDir, rootDir, svelteRootUrl, svelteClientUrl, svelteServerDir, watchPatterns, }) {
+function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rollupConfigPath, publicDir, rootDir, svelteRootUrl, svelteClientUrl, svelteServerDir, watchPatterns, }) {
     return __awaiter(this, void 0, void 0, function* () {
         const unhandledErrorsCode = yield fse.readFile(
         // eslint-disable-next-line node/no-missing-require
@@ -43,26 +43,11 @@ function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rol
             clear: false,
             watchDirs: [],
         });
-        let bundleSrcPath;
-        let svelteFiles;
-        let rollupWatcherAwaiter;
-        function writeBundleSrc() {
-            const bundleSrcContent = Array.from(svelteFiles).map((filePath) => `import '${normalizePath(filePath)}'`).join('\r\n');
-            return fse.writeFile(bundleSrcPath, bundleSrcContent, { encoding: 'utf-8' });
-        }
-        function updateAndWaitBundle() {
-            return __awaiter(this, void 0, void 0, function* () {
-                yield writeBundleSrc();
-                return rollupWatcherAwaiter.wait();
-            });
-        }
+        let rollupConfigs;
+        let rollupWatcher;
         if (rollupConfigPath) {
-            bundleSrcPath = path.resolve(rollupBundleSrcPath);
-            svelteFiles = new Set();
-            yield writeBundleSrc();
-            const { options: rollupConfig } = yield loadAndParseConfigFile(path.resolve(rollupConfigPath));
-            const rollupWatcher = watch(rollupConfig);
-            rollupWatcherAwaiter = createRollupWatchAwaiter(rollupWatcher);
+            const result = yield loadAndParseConfigFile(path.resolve(rollupConfigPath));
+            rollupConfigs = result.options;
         }
         console.debug('port=', port);
         console.debug('publicDir=', publicDir);
@@ -123,8 +108,13 @@ function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rol
                 const sourceFilePath = yield resolveFilePath(path.resolve('.' + req.path));
                 if (sourceFilePath) {
                     if (svelteServerDir && /\.(svelte)$/.test(req.path)) {
-                        svelteFiles.add(sourceFilePath);
-                        yield updateAndWaitBundle();
+                        if (rollupConfigs.some(config => config.input !== sourceFilePath)) {
+                            if (rollupWatcher) {
+                                yield rollupWatcher.watcher.close();
+                            }
+                            rollupWatcher = rollupWatch(rollupConfigs.map(config => (Object.assign(Object.assign({}, config), { input: sourceFilePath }))));
+                        }
+                        yield (rollupWatcher === null || rollupWatcher === void 0 ? void 0 : rollupWatcher.wait());
                     }
                     else {
                         yield watcher.watchFiles({

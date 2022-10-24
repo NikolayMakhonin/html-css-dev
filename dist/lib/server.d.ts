@@ -7,7 +7,6 @@ export declare type StartServerArgs = {
     sourceMap?: SourceMapType;
     srcDir: string;
     rollupConfigPath: string;
-    rollupBundleSrcPath: string;
     publicDir: string;
     rootDir: string;
     svelteRootUrl: string;

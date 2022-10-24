@@ -6,13 +6,12 @@ var tslib = require('tslib');
 var express = require('express');
 var path = require('path');
 var fse = require('fs-extra');
-var rollup = require('rollup');
 var multimatch = require('multimatch');
 var _liveReload = require('@flemist/easy-livereload');
 var loadConfig = require('./loadConfig.cjs');
 var helpers_common = require('./helpers/common.cjs');
 var Watcher = require('./Watcher.cjs');
-var buildRollup = require('./buildRollup.cjs');
+var RollupWatcherController = require('./RollupWatcherController.cjs');
 var loadAndParseConfigFile = require('rollup/dist/loadConfigFile');
 require('./prepareBuildFilesOptions.cjs');
 require('postcss-load-config');
@@ -23,6 +22,7 @@ require('postcss');
 require('@flemist/postcss-remove-global');
 require('node-watch');
 require('@flemist/async-utils');
+require('rollup');
 
 function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
 
@@ -37,7 +37,7 @@ function requireNoCache(module) {
     delete require.cache[require.resolve(module)];
     return require(module);
 }
-function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rollupConfigPath, rollupBundleSrcPath, publicDir, rootDir, svelteRootUrl, svelteClientUrl, svelteServerDir, watchPatterns, }) {
+function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rollupConfigPath, publicDir, rootDir, svelteRootUrl, svelteClientUrl, svelteServerDir, watchPatterns, }) {
     return tslib.__awaiter(this, void 0, void 0, function* () {
         const unhandledErrorsCode = yield fse__default["default"].readFile(
         // eslint-disable-next-line node/no-missing-require
@@ -56,26 +56,11 @@ function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rol
             clear: false,
             watchDirs: [],
         });
-        let bundleSrcPath;
-        let svelteFiles;
-        let rollupWatcherAwaiter;
-        function writeBundleSrc() {
-            const bundleSrcContent = Array.from(svelteFiles).map((filePath) => `import '${helpers_common.normalizePath(filePath)}'`).join('\r\n');
-            return fse__default["default"].writeFile(bundleSrcPath, bundleSrcContent, { encoding: 'utf-8' });
-        }
-        function updateAndWaitBundle() {
-            return tslib.__awaiter(this, void 0, void 0, function* () {
-                yield writeBundleSrc();
-                return rollupWatcherAwaiter.wait();
-            });
-        }
+        let rollupConfigs;
+        let rollupWatcher;
         if (rollupConfigPath) {
-            bundleSrcPath = path__default["default"].resolve(rollupBundleSrcPath);
-            svelteFiles = new Set();
-            yield writeBundleSrc();
-            const { options: rollupConfig } = yield loadAndParseConfigFile__default["default"](path__default["default"].resolve(rollupConfigPath));
-            const rollupWatcher = rollup.watch(rollupConfig);
-            rollupWatcherAwaiter = buildRollup.createRollupWatchAwaiter(rollupWatcher);
+            const result = yield loadAndParseConfigFile__default["default"](path__default["default"].resolve(rollupConfigPath));
+            rollupConfigs = result.options;
         }
         console.debug('port=', port);
         console.debug('publicDir=', publicDir);
@@ -136,8 +121,13 @@ function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rol
                 const sourceFilePath = yield resolveFilePath(path__default["default"].resolve('.' + req.path));
                 if (sourceFilePath) {
                     if (svelteServerDir && /\.(svelte)$/.test(req.path)) {
-                        svelteFiles.add(sourceFilePath);
-                        yield updateAndWaitBundle();
+                        if (rollupConfigs.some(config => config.input !== sourceFilePath)) {
+                            if (rollupWatcher) {
+                                yield rollupWatcher.watcher.close();
+                            }
+                            rollupWatcher = RollupWatcherController.rollupWatch(rollupConfigs.map(config => (Object.assign(Object.assign({}, config), { input: sourceFilePath }))));
+                        }
+                        yield (rollupWatcher === null || rollupWatcher === void 0 ? void 0 : rollupWatcher.wait());
                     }
                     else {
                         yield watcher.watchFiles({

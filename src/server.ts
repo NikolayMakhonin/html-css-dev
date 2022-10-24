@@ -2,15 +2,15 @@
 import express from 'express'
 import path from 'path'
 import fse from 'fs-extra'
-import {watch} from 'rollup'
 import multimatch from 'multimatch'
 import _liveReload from '@flemist/easy-livereload'
 import {Config, createConfig} from './loadConfig'
-import {filePathWithoutExtension, getPathStat, normalizePath} from 'src/helpers/common'
+import {filePathWithoutExtension, getPathStat} from 'src/helpers/common'
 import {createWatcher} from 'src/Watcher'
 import {SourceMapType} from 'src/prepareBuildFilesOptions'
-import {createRollupWatchAwaiter, RollupWatcherAwaiter} from 'src/buildRollup'
+import {rollupWatch, RollupWatcherExt} from 'src/RollupWatcherController'
 import loadAndParseConfigFile from 'rollup/dist/loadConfigFile'
+import type {RollupWatchOptions} from 'rollup'
 
 function requireNoCache(module) {
   delete require.cache[require.resolve(module)]
@@ -24,7 +24,6 @@ export type StartServerArgs = {
   sourceMap?: SourceMapType,
   srcDir: string,
   rollupConfigPath: string,
-  rollupBundleSrcPath: string,
   publicDir: string,
   rootDir: string,
   svelteRootUrl: string,
@@ -40,7 +39,6 @@ async function _startServer({
   sourceMap,
   srcDir,
   rollupConfigPath,
-  rollupBundleSrcPath,
   publicDir,
   rootDir,
   svelteRootUrl,
@@ -70,27 +68,12 @@ async function _startServer({
     watchDirs: [],
   })
 
-  let bundleSrcPath: string
-  let svelteFiles: Set<string>
-  let rollupWatcherAwaiter: RollupWatcherAwaiter
-
-  function writeBundleSrc() {
-    const bundleSrcContent = Array.from(svelteFiles).map((filePath) => `import '${normalizePath(filePath)}'`).join('\r\n')
-    return fse.writeFile(bundleSrcPath, bundleSrcContent, {encoding: 'utf-8'})
-  }
-
-  async function updateAndWaitBundle() {
-    await writeBundleSrc()
-    return rollupWatcherAwaiter.wait()
-  }
+  let rollupConfigs: RollupWatchOptions[]
+  let rollupWatcher: RollupWatcherExt
 
   if (rollupConfigPath) {
-    bundleSrcPath = path.resolve(rollupBundleSrcPath)
-    svelteFiles = new Set<string>()
-    await writeBundleSrc()
-    const {options: rollupConfig} = await loadAndParseConfigFile(path.resolve(rollupConfigPath))
-    const rollupWatcher = watch(rollupConfig)
-    rollupWatcherAwaiter = createRollupWatchAwaiter(rollupWatcher)
+    const result = await loadAndParseConfigFile(path.resolve(rollupConfigPath))
+    rollupConfigs = result.options
   }
 
   console.debug('port=', port)
@@ -158,8 +141,16 @@ async function _startServer({
         const sourceFilePath = await resolveFilePath(path.resolve('.' + req.path))
         if (sourceFilePath) {
           if (svelteServerDir && /\.(svelte)$/.test(req.path)) {
-            svelteFiles.add(sourceFilePath)
-            await updateAndWaitBundle()
+            if (rollupConfigs.some(config => config.input !== sourceFilePath)) {
+              if (rollupWatcher) {
+                await rollupWatcher.watcher.close()
+              }
+              rollupWatcher = rollupWatch(rollupConfigs.map(config => ({
+                ...config,
+                input: sourceFilePath,
+              })))
+            }
+            await rollupWatcher?.wait()
           }
           else {
             await watcher.watchFiles({

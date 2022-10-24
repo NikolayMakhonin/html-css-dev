@@ -2,13 +2,12 @@ import type {RollupWatcher, RollupWatchOptions, InputOption} from 'rollup'
 import {CustomPromise} from '@flemist/async-utils'
 import {watch} from 'rollup'
 
-export type RollupWatcherAwaiter = {
+export type RollupWatcherExt = {
+  watcher: RollupWatcher
   wait(): Promise<void>
 }
 
-// export function createRollupWatchAwaiter(config: RollupWatchOptions | RollupWatchOptions[]) {
-//   const watcher = watch(config)
-function createRollupWatchAwaiter(watcher: RollupWatcher): RollupWatcherAwaiter {
+function createRollupWatchAwaiter(watcher: RollupWatcher): () => Promise<void> {
   let waitPromise = new CustomPromise()
   let timer
   watcher.on('event', (event) => {
@@ -38,10 +37,8 @@ function createRollupWatchAwaiter(watcher: RollupWatcher): RollupWatcherAwaiter 
     }
   })
 
-  return {
-    wait() {
-      return waitPromise.promise
-    },
+  return function wait() {
+    return waitPromise.promise
   }
 }
 
@@ -51,40 +48,31 @@ function inputIsEmpty(input: InputOption) {
     || typeof input === 'object' && Object.keys(input).length === 0
 }
 
-export class RollupWatcherController {
-  private readonly _configs: RollupWatchOptions[]
-  constructor(config: RollupWatchOptions | RollupWatchOptions[]) {
-    this._configs = Array.isArray(config) ? config : [config]
+function rollupConfigIsEmpty(config: RollupWatchOptions) {
+  return !config || inputIsEmpty(config.input)
+}
+
+function rollupConfigsIsEmpty(configs: RollupWatchOptions | RollupWatchOptions[]) {
+  if (!configs) {
+    return true
   }
-
-  // private _input: InputOption
-  // get input() {
-  //   return this._input
-  // }
-  // set input(value: InputOption) {
-  //   this._input = value
-  // }
-
-  private _watcher: RollupWatcher
-  private _awaiter: RollupWatcherAwaiter
-  async start(input: InputOption) {
-    await this.stop()
-    if (inputIsEmpty(input)) {
-      return
-    }
-    this._configs.forEach(config => {
-      config.input = input
-    })
-    this._watcher = watch(this._configs)
-    this._awaiter = createRollupWatchAwaiter(this._watcher)
+  if (!Array.isArray(configs)) {
+    return rollupConfigIsEmpty(configs)
   }
+  return configs.every(rollupConfigIsEmpty)
+}
 
-  async stop() {
-    const watcher = this._watcher
-    if (watcher) {
-      this._watcher = null
-      this._awaiter = null
-      await watcher.close()
-    }
+export function rollupWatch(configs: RollupWatchOptions | RollupWatchOptions[]) {
+  if (rollupConfigsIsEmpty(configs)) {
+    return null
+  }
+  if (!Array.isArray(configs)) {
+    configs = [configs]
+  }
+  const watcher = watch(configs)
+  const wait = createRollupWatchAwaiter(this._watcher)
+  return {
+    watcher,
+    wait,
   }
 }
