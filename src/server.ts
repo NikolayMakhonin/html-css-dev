@@ -288,8 +288,9 @@ ${html}
     // You must provide four arguments to identify it as an error-handling middleware function.
     // Even if you don’t need to use the next object, you must specify it to maintain the signature.
     .use((err: any, req: Request, res: Response, next: any) => {
+      console.error(err)
       const errorStr = err instanceof Error ? err.stack || err.toString() : err + ''
-      res.status(500).end(`<pre>${errorStr}</pre>`)
+      res.status(500).end(`<pre style="white-space: pre-wrap;">${errorStr}</pre>`)
     })
 
   server
