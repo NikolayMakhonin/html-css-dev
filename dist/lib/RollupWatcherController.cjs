@@ -9,6 +9,9 @@ function createRollupWatchAwaiter(watcher) {
     let waitPromise = new asyncUtils.CustomPromise();
     let timer;
     watcher.on('event', (event) => {
+        if (waitPromise.state === 'rejected' && event.code !== 'START') {
+            return;
+        }
         if (timer) {
             clearTimeout(timer);
             timer = null;
@@ -25,9 +28,7 @@ function createRollupWatchAwaiter(watcher) {
                 }, 100);
                 break;
             case 'ERROR':
-                timer = setTimeout(() => {
-                    waitPromise.reject(event.error);
-                }, 100);
+                waitPromise.reject(event.error);
                 break;
         }
     });

@@ -1,6 +1,7 @@
 import { startServer } from '../server.mjs';
 import 'tslib';
 import 'express';
+import 'express-async-errors';
 import 'path';
 import 'fs-extra';
 import 'multimatch';

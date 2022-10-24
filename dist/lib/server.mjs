@@ -1,5 +1,6 @@
 import { __awaiter } from 'tslib';
 import express from 'express';
+import 'express-async-errors';
 import path from 'path';
 import fse from 'fs-extra';
 import multimatch from 'multimatch';
@@ -106,25 +107,25 @@ function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rol
                         }
                     });
                 }
-                const sourceFilePath = yield resolveFilePath(path.resolve('.' + req.path));
-                if (sourceFilePath) {
-                    if (svelteServerDir && /\.(svelte)$/.test(req.path)) {
-                        if (rollupInput !== sourceFilePath) {
-                            rollupInput = sourceFilePath;
-                            if (rollupWatcher) {
-                                yield rollupWatcher.watcher.close();
-                            }
-                            rollupWatcher = rollupWatch(rollupConfigs.map(config => (Object.assign(Object.assign({}, config), { input: rollupInput }))));
+                const sourceFilePath = path.resolve('.' + req.path);
+                const sourceFilePathResolved = yield resolveFilePath(sourceFilePath);
+                if (sourceFilePathResolved && svelteServerDir && /\.(svelte)$/.test(sourceFilePath)) {
+                    if (rollupInput !== sourceFilePathResolved) {
+                        rollupInput = sourceFilePathResolved;
+                        if (rollupWatcher) {
+                            yield rollupWatcher.watcher.close();
                         }
-                        yield (rollupWatcher === null || rollupWatcher === void 0 ? void 0 : rollupWatcher.wait());
+                        rollupWatcher = rollupWatch(rollupConfigs.map(config => (Object.assign(Object.assign({}, config), { input: rollupInput }))));
                     }
-                    else {
+                    yield (rollupWatcher === null || rollupWatcher === void 0 ? void 0 : rollupWatcher.wait());
+                }
+                else {
+                    const filePattern = sourceFilePathResolved ? sourceFilePathResolved
+                        : /\.p?css(\.map)?$/.test(sourceFilePath) ? filePathWithoutExtension(sourceFilePath) + '.{pcss,css,css.map}'
+                            : null;
+                    if (filePattern) {
                         yield watcher.watchFiles({
-                            filesPatterns: [
-                                /\.p?css(\.map)?$/.test(req.path)
-                                    ? filePathWithoutExtension(sourceFilePath) + '.{pcss,css,css.map}'
-                                    : sourceFilePath,
-                            ],
+                            filesPatterns: [filePattern],
                         });
                     }
                 }
@@ -147,7 +148,7 @@ function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rol
 <html lang="ru">
 <head>
 	<meta charset="UTF-8" />
-	<title>HTML Dev</title>
+	<title>~dev</title>
 	<!-- region preload -->
 	<style>
 		/* Hide page while loading css */
@@ -235,6 +236,14 @@ ${html}
                 }
                 res.status(404).send('Not Found:\r\n' + filePaths.join('\r\n'));
             });
+        })
+            // docs: https://expressjs.com/en/5x/api.html#description
+            // Error-handling middleware always takes four arguments.
+            // You must provide four arguments to identify it as an error-handling middleware function.
+            // Even if you don’t need to use the next object, you must specify it to maintain the signature.
+            .use((err, req, res, next) => {
+            const errorStr = err instanceof Error ? err.stack || err.toString() : err + '';
+            res.status(500).end(`<pre>${errorStr}</pre>`);
         });
         server
             .listen(port, () => {

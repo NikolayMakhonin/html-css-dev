@@ -5,6 +5,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
 var server = require('../server.cjs');
 require('tslib');
 require('express');
+require('express-async-errors');
 require('path');
 require('fs-extra');
 require('multimatch');

@@ -1,3 +1,4 @@
+import 'express-async-errors';
 import { Config } from './loadConfig';
 import { SourceMapType } from "./prepareBuildFilesOptions";
 export declare type StartServerArgs = {

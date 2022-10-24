@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
+import type { Request, Response } from 'express'
 import express from 'express'
+import 'express-async-errors'
 import path from 'path'
 import fse from 'fs-extra'
 import multimatch from 'multimatch'
@@ -139,28 +141,28 @@ async function _startServer({
           }
         }
 
-        const sourceFilePath = await resolveFilePath(path.resolve('.' + req.path))
-        if (sourceFilePath) {
-          if (svelteServerDir && /\.(svelte)$/.test(req.path)) {
-            if (rollupInput !== sourceFilePath) {
-              rollupInput = sourceFilePath
-              if (rollupWatcher) {
-                await rollupWatcher.watcher.close()
-              }
-              rollupWatcher = rollupWatch(rollupConfigs.map(config => ({
-                ...config,
-                input: rollupInput,
-              })))
+        const sourceFilePath = path.resolve('.' + req.path)
+        const sourceFilePathResolved = await resolveFilePath(sourceFilePath)
+        if (sourceFilePathResolved && svelteServerDir && /\.(svelte)$/.test(sourceFilePath)) {
+          if (rollupInput !== sourceFilePathResolved) {
+            rollupInput = sourceFilePathResolved
+            if (rollupWatcher) {
+              await rollupWatcher.watcher.close()
             }
-            await rollupWatcher?.wait()
+            rollupWatcher = rollupWatch(rollupConfigs.map(config => ({
+              ...config,
+              input: rollupInput,
+            })))
           }
-          else {
+          await rollupWatcher?.wait()
+        }
+        else {
+          const filePattern = sourceFilePathResolved ? sourceFilePathResolved
+            : /\.p?css(\.map)?$/.test(sourceFilePath) ? filePathWithoutExtension(sourceFilePath) + '.{pcss,css,css.map}'
+              : null
+          if (filePattern) {
             await watcher.watchFiles({
-              filesPatterns: [
-                /\.p?css(\.map)?$/.test(req.path)
-                  ? filePathWithoutExtension(sourceFilePath) + '.{pcss,css,css.map}'
-                  : sourceFilePath,
-              ],
+              filesPatterns: [filePattern],
             })
           }
         }
@@ -188,7 +190,7 @@ async function _startServer({
 <html lang="ru">
 <head>
 	<meta charset="UTF-8" />
-	<title>HTML Dev</title>
+	<title>~dev</title>
 	<!-- region preload -->
 	<style>
 		/* Hide page while loading css */
@@ -281,6 +283,14 @@ ${html}
         res.status(404).send('Not Found:\r\n' + filePaths.join('\r\n'))
       },
     )
+    // docs: https://expressjs.com/en/5x/api.html#description
+    // Error-handling middleware always takes four arguments.
+    // You must provide four arguments to identify it as an error-handling middleware function.
+    // Even if you don’t need to use the next object, you must specify it to maintain the signature.
+    .use((err: any, req: Request, res: Response, next: any) => {
+      const errorStr = err instanceof Error ? err.stack || err.toString() : err + ''
+      res.status(500).end(`<pre>${errorStr}</pre>`)
+    })
 
   server
     .listen(port, () => {

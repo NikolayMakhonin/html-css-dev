@@ -11,6 +11,10 @@ function createRollupWatchAwaiter(watcher: RollupWatcher): () => Promise<void> {
   let waitPromise = new CustomPromise()
   let timer
   watcher.on('event', (event) => {
+    if (waitPromise.state === 'rejected' && event.code !== 'START') {
+      return
+    }
+
     if (timer) {
       clearTimeout(timer)
       timer = null
@@ -28,9 +32,7 @@ function createRollupWatchAwaiter(watcher: RollupWatcher): () => Promise<void> {
         }, 100)
         break
       case 'ERROR':
-        timer = setTimeout(() => {
-          waitPromise.reject(event.error)
-        }, 100)
+        waitPromise.reject(event.error)
         break
       default:
         break
