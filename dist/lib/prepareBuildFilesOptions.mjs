@@ -3,7 +3,7 @@ import path from 'path';
 import fse from 'fs-extra';
 import postcssLoadConfig from 'postcss-load-config';
 
-function prepareBuildFilesOptions({ inputDir, outputDir, watchDirs, sourceMap, clear, }) {
+function prepareBuildFilesOptions({ inputDir, outputDir, watchDirs, sourceMap, clear, baseUrl, }) {
     return __awaiter(this, void 0, void 0, function* () {
         inputDir = path.resolve(inputDir);
         outputDir = path.resolve(outputDir);
@@ -28,6 +28,7 @@ function prepareBuildFilesOptions({ inputDir, outputDir, watchDirs, sourceMap, c
             outputDir,
             watchDirs: Array.from(watchDirsSet.values()),
             postcssConfig,
+            baseUrl,
         };
     });
 }

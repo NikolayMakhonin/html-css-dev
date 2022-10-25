@@ -23,7 +23,7 @@ function buildCss({ inputFile, outputFile, postcssConfig, }) {
         function writeFile(file, content) {
             return tslib.__awaiter(this, void 0, void 0, function* () {
                 try {
-                    yield fse__default["default"].writeFile(file, content);
+                    yield fse__default["default"].writeFile(file, content, { encoding: 'utf-8' });
                 }
                 catch (err) {
                     console.error(err);
@@ -66,6 +66,42 @@ function buildCss({ inputFile, outputFile, postcssConfig, }) {
         }
     });
 }
+function buildHtml({ inputFile, outputFile, baseUrl }) {
+    return tslib.__awaiter(this, void 0, void 0, function* () {
+        yield fse__default["default"].mkdirp(path__default["default"].dirname(outputFile));
+        try {
+            let html = yield fse__default["default"].readFile(inputFile, { encoding: 'utf-8' });
+            if (!/<html\b/i.test(html)) {
+                html = `
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+	<title>~dev</title>
+  <base href="${baseUrl || '/'}" />
+</head>
+<body>
+${html}
+</body>
+</html>
+`;
+            }
+            yield fse__default["default"].mkdirp(path__default["default"].dirname(outputFile));
+            yield fse__default["default"].writeFile(outputFile, html, { encoding: 'utf-8' });
+        }
+        catch (err) {
+            console.error(err);
+            return null;
+        }
+        yield fse__default["default"].copy(inputFile, outputFile, {
+            overwrite: true,
+            preserveTimestamps: true,
+        });
+        return {
+            outputFiles: [outputFile],
+        };
+    });
+}
 function copyFile({ inputFile, outputFile }) {
     return tslib.__awaiter(this, void 0, void 0, function* () {
         yield fse__default["default"].mkdirp(path__default["default"].dirname(outputFile));
@@ -78,7 +114,7 @@ function copyFile({ inputFile, outputFile }) {
         };
     });
 }
-function buildFile({ inputFile, outputFile, postcssConfig }) {
+function buildFile({ inputFile, outputFile, postcssConfig, baseUrl }) {
     return tslib.__awaiter(this, void 0, void 0, function* () {
         outputFile = helpers_common.normalizePath(path__default["default"].resolve(outputFile));
         if (yield helpers_common.getPathStat(outputFile)) {
@@ -88,6 +124,9 @@ function buildFile({ inputFile, outputFile, postcssConfig }) {
         switch (ext) {
             case '.pcss':
                 return buildCss({ inputFile, outputFile, postcssConfig });
+            case '.htm':
+            case '.html':
+                return buildHtml({ inputFile, outputFile, baseUrl });
             default:
                 return copyFile({ inputFile, outputFile });
         }
@@ -99,5 +138,6 @@ function watchFile(options) {
 
 exports.buildCss = buildCss;
 exports.buildFile = buildFile;
+exports.buildHtml = buildHtml;
 exports.copyFile = copyFile;
 exports.watchFile = watchFile;

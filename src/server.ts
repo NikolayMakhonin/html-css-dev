@@ -32,6 +32,7 @@ export type StartServerArgs = {
   svelteClientUrl: string,
   svelteServerDir: string,
   watchPatterns?: string[],
+  baseUrl?: string,
 }
 
 async function _startServer({
@@ -47,6 +48,7 @@ async function _startServer({
   svelteClientUrl,
   svelteServerDir,
   watchPatterns,
+  baseUrl,
 }: StartServerArgs) {
   const unhandledErrorsCode = await fse.readFile(
     // eslint-disable-next-line node/no-missing-require
@@ -68,6 +70,7 @@ async function _startServer({
     sourceMap,
     clear    : false,
     watchDirs: [],
+    baseUrl,
   })
 
   let rollupConfigs: RollupWatchOptions[]
@@ -191,6 +194,7 @@ async function _startServer({
 <head>
 	<meta charset="UTF-8" />
 	<title>~dev</title>
+  <base href="${baseUrl || '/'}" />
 	<!-- region preload -->
 	<style>
 		/* Hide page while loading css */

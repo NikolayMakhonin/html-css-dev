@@ -6,18 +6,21 @@ export type PrepareBuildFileOptionsArgs = {
   inputDir: string,
   outputDir: string,
   postcssConfig: PostcssConfig,
+  baseUrl: string,
 }
 
 export type BuildFileOptions = {
   inputFile: string,
   outputFile: string,
   postcssConfig: PostcssConfig,
+  baseUrl: string,
 }
 
 export function prepareBuildFileOptions(inputFile: string, {
   inputDir,
   outputDir,
   postcssConfig,
+  baseUrl,
 }: PrepareBuildFileOptionsArgs): BuildFileOptions {
   const outputFile = normalizePath(
     path.join(
@@ -30,5 +33,6 @@ export function prepareBuildFileOptions(inputFile: string, {
     inputFile,
     outputFile,
     postcssConfig,
+    baseUrl,
   }
 }

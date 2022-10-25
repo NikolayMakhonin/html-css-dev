@@ -11,12 +11,13 @@ function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'defau
 
 var path__default = /*#__PURE__*/_interopDefaultLegacy(path);
 
-function prepareBuildFileOptions(inputFile, { inputDir, outputDir, postcssConfig, }) {
+function prepareBuildFileOptions(inputFile, { inputDir, outputDir, postcssConfig, baseUrl, }) {
     const outputFile = helpers_common.normalizePath(path__default["default"].join(outputDir, path__default["default"].relative(inputDir, inputFile)));
     return {
         inputFile,
         outputFile,
         postcssConfig,
+        baseUrl,
     };
 }
 

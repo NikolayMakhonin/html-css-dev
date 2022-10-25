@@ -44,12 +44,13 @@ class Watcher {
             watcher.count++;
             return;
         }
-        const { inputDir, outputDir, postcssConfig, } = this.options;
+        const { inputDir, outputDir, postcssConfig, baseUrl, } = this.options;
         watcher = (() => __awaiter(this, void 0, void 0, function* () {
             const watcher = yield watchFile(prepareBuildFileOptions(file, {
                 inputDir,
                 outputDir,
                 postcssConfig,
+                baseUrl,
             }));
             if (!watcher) {
                 return;

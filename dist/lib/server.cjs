@@ -38,7 +38,7 @@ function requireNoCache(module) {
     delete require.cache[require.resolve(module)];
     return require(module);
 }
-function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rollupConfigPath, publicDir, rootDir, svelteRootUrl, svelteClientUrl, svelteServerDir, watchPatterns, }) {
+function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rollupConfigPath, publicDir, rootDir, svelteRootUrl, svelteClientUrl, svelteServerDir, watchPatterns, baseUrl, }) {
     return tslib.__awaiter(this, void 0, void 0, function* () {
         const unhandledErrorsCode = yield fse__default["default"].readFile(
         // eslint-disable-next-line node/no-missing-require
@@ -56,6 +56,7 @@ function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rol
             sourceMap,
             clear: false,
             watchDirs: [],
+            baseUrl,
         });
         let rollupConfigs;
         let rollupWatcher;
@@ -162,6 +163,7 @@ function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rol
 <head>
 	<meta charset="UTF-8" />
 	<title>~dev</title>
+  <base href="${baseUrl || '/'}" />
 	<!-- region preload -->
 	<style>
 		/* Hide page while loading css */

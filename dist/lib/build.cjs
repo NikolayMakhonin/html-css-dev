@@ -22,7 +22,7 @@ function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'defau
 
 var globby__default = /*#__PURE__*/_interopDefaultLegacy(globby);
 
-function buildFiles({ inputDir, outputDir, filesPatterns, postcssConfig, }) {
+function buildFiles({ inputDir, outputDir, postcssConfig, baseUrl, filesPatterns, }) {
     return tslib.__awaiter(this, void 0, void 0, function* () {
         const patterns = helpers_common.prepareGlobPatterns(inputDir, filesPatterns);
         const inputFiles = yield globby__default["default"](patterns);
@@ -30,6 +30,7 @@ function buildFiles({ inputDir, outputDir, filesPatterns, postcssConfig, }) {
             inputDir,
             outputDir,
             postcssConfig,
+            baseUrl,
         }));
         yield Promise.all([
             ...buildOptions.map(helpers_build.buildFile),

@@ -11,6 +11,7 @@ export type PrepareBuildFilesOptionsArgs = {
   watchDirs?: string[],
   sourceMap?: SourceMapType,
   clear?: boolean,
+  baseUrl?: string,
 }
 
 export type BuildFilesOptions = {
@@ -18,6 +19,7 @@ export type BuildFilesOptions = {
   outputDir: string,
   watchDirs: string[],
   postcssConfig: PostcssConfig,
+  baseUrl,
 }
 
 export async function prepareBuildFilesOptions({
@@ -26,6 +28,7 @@ export async function prepareBuildFilesOptions({
   watchDirs,
   sourceMap,
   clear,
+  baseUrl,
 }: PrepareBuildFilesOptionsArgs): Promise<BuildFilesOptions> {
   inputDir = path.resolve(inputDir)
   outputDir = path.resolve(outputDir)
@@ -52,6 +55,7 @@ export async function prepareBuildFilesOptions({
     outputDir,
     watchDirs: Array.from(watchDirsSet.values()),
     postcssConfig,
+    baseUrl,
   }
 }
 

@@ -13,7 +13,7 @@ var path__default = /*#__PURE__*/_interopDefaultLegacy(path);
 var fse__default = /*#__PURE__*/_interopDefaultLegacy(fse);
 var postcssLoadConfig__default = /*#__PURE__*/_interopDefaultLegacy(postcssLoadConfig);
 
-function prepareBuildFilesOptions({ inputDir, outputDir, watchDirs, sourceMap, clear, }) {
+function prepareBuildFilesOptions({ inputDir, outputDir, watchDirs, sourceMap, clear, baseUrl, }) {
     return tslib.__awaiter(this, void 0, void 0, function* () {
         inputDir = path__default["default"].resolve(inputDir);
         outputDir = path__default["default"].resolve(outputDir);
@@ -38,6 +38,7 @@ function prepareBuildFilesOptions({ inputDir, outputDir, watchDirs, sourceMap, c
             outputDir,
             watchDirs: Array.from(watchDirsSet.values()),
             postcssConfig,
+            baseUrl,
         };
     });
 }

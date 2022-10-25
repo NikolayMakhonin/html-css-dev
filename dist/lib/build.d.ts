@@ -1,6 +1,6 @@
 import { BuildFilesOptions, PrepareBuildFilesOptionsArgs } from "./prepareBuildFilesOptions";
 import { Config } from './loadConfig';
-export declare function buildFiles({ inputDir, outputDir, filesPatterns, postcssConfig, }: BuildFilesOptions & {
+export declare function buildFiles({ inputDir, outputDir, postcssConfig, baseUrl, filesPatterns, }: BuildFilesOptions & {
     filesPatterns: string[];
 }): Promise<void>;
 export declare type BuildArgs = PrepareBuildFilesOptionsArgs & {

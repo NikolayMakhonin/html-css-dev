@@ -68,6 +68,7 @@ export class Watcher {
       inputDir,
       outputDir,
       postcssConfig,
+      baseUrl,
     } = this.options
 
     watcher = (async () => {
@@ -75,6 +76,7 @@ export class Watcher {
         inputDir,
         outputDir,
         postcssConfig,
+        baseUrl,
       }))
 
       if (!watcher) {

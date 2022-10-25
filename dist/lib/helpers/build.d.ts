@@ -8,16 +8,24 @@ export declare function buildCss({ inputFile, outputFile, postcssConfig, }: Buil
     dependencies: string[];
     outputFiles: any[];
 }>;
+export declare function buildHtml({ inputFile, outputFile, baseUrl }: {
+    inputFile: any;
+    outputFile: any;
+    baseUrl: any;
+}): Promise<{
+    outputFiles: any[];
+}>;
 export declare function copyFile({ inputFile, outputFile }: {
     inputFile: any;
     outputFile: any;
 }): Promise<{
     outputFiles: any[];
 }>;
-export declare function buildFile({ inputFile, outputFile, postcssConfig }: {
+export declare function buildFile({ inputFile, outputFile, postcssConfig, baseUrl }: {
     inputFile: any;
     outputFile: any;
     postcssConfig: any;
+    baseUrl: any;
 }): Promise<{
     outputFiles: any[];
 }>;

@@ -14,7 +14,7 @@ import '@flemist/postcss-remove-global';
 import 'multimatch';
 import 'node-watch';
 
-function buildFiles({ inputDir, outputDir, filesPatterns, postcssConfig, }) {
+function buildFiles({ inputDir, outputDir, postcssConfig, baseUrl, filesPatterns, }) {
     return __awaiter(this, void 0, void 0, function* () {
         const patterns = prepareGlobPatterns(inputDir, filesPatterns);
         const inputFiles = yield globby(patterns);
@@ -22,6 +22,7 @@ function buildFiles({ inputDir, outputDir, filesPatterns, postcssConfig, }) {
             inputDir,
             outputDir,
             postcssConfig,
+            baseUrl,
         }));
         yield Promise.all([
             ...buildOptions.map(buildFile),

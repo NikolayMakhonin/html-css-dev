@@ -9,8 +9,9 @@ import {prepareGlobPatterns} from 'src/helpers/common'
 export async function buildFiles({
   inputDir,
   outputDir,
-  filesPatterns,
   postcssConfig,
+  baseUrl,
+  filesPatterns,
 }: BuildFilesOptions & { filesPatterns: string[] }) {
   const patterns = prepareGlobPatterns(inputDir, filesPatterns)
 
@@ -20,6 +21,7 @@ export async function buildFiles({
     inputDir,
     outputDir,
     postcssConfig,
+    baseUrl,
   }))
 
   await Promise.all([

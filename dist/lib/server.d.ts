@@ -14,6 +14,7 @@ export declare type StartServerArgs = {
     svelteClientUrl: string;
     svelteServerDir: string;
     watchPatterns?: string[];
+    baseUrl?: string;
 };
 export declare function startServer(args: StartServerArgs & {
     baseConfig: Config;

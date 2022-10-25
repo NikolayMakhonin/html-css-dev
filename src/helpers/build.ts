@@ -21,7 +21,7 @@ export async function buildCss({
   const outputFiles = []
   async function writeFile(file, content) {
     try {
-      await fse.writeFile(file, content)
+      await fse.writeFile(file, content, { encoding: 'utf-8' })
     }
     catch (err) {
       console.error(err)
@@ -83,6 +83,46 @@ export async function buildCss({
   }
 }
 
+export async function buildHtml({inputFile, outputFile, baseUrl}) {
+  await fse.mkdirp(path.dirname(outputFile))
+
+  try {
+    let html = await fse.readFile(inputFile, {encoding: 'utf-8'})
+    if (!/<html\b/i.test(html)) {
+      html = `
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+	<title>~dev</title>
+  <base href="${baseUrl || '/'}" />
+</head>
+<body>
+${html}
+</body>
+</html>
+`
+    }
+
+    await fse.mkdirp(path.dirname(outputFile))
+
+    await fse.writeFile(outputFile, html, { encoding: 'utf-8' })
+  }
+  catch (err) {
+    console.error(err)
+    return null
+  }
+
+  await fse.copy(inputFile, outputFile, {
+    overwrite         : true,
+    preserveTimestamps: true,
+  })
+
+  return {
+    outputFiles: [outputFile],
+  }
+}
+
 export async function copyFile({inputFile, outputFile}) {
   await fse.mkdirp(path.dirname(outputFile))
 
@@ -96,7 +136,7 @@ export async function copyFile({inputFile, outputFile}) {
   }
 }
 
-export async function buildFile({inputFile, outputFile, postcssConfig}) {
+export async function buildFile({inputFile, outputFile, postcssConfig, baseUrl}) {
   outputFile = normalizePath(path.resolve(outputFile))
   if (await getPathStat(outputFile)) {
     await fse.rm(outputFile, { recursive: true, force: true })
@@ -105,6 +145,9 @@ export async function buildFile({inputFile, outputFile, postcssConfig}) {
   switch (ext) {
     case '.pcss':
       return buildCss({inputFile, outputFile, postcssConfig})
+    case '.htm':
+    case '.html':
+      return buildHtml({inputFile, outputFile, baseUrl})
     default:
       return copyFile({inputFile, outputFile})
   }

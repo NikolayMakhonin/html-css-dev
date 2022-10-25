@@ -12,7 +12,7 @@ function buildCss({ inputFile, outputFile, postcssConfig, }) {
         function writeFile(file, content) {
             return __awaiter(this, void 0, void 0, function* () {
                 try {
-                    yield fse.writeFile(file, content);
+                    yield fse.writeFile(file, content, { encoding: 'utf-8' });
                 }
                 catch (err) {
                     console.error(err);
@@ -55,6 +55,42 @@ function buildCss({ inputFile, outputFile, postcssConfig, }) {
         }
     });
 }
+function buildHtml({ inputFile, outputFile, baseUrl }) {
+    return __awaiter(this, void 0, void 0, function* () {
+        yield fse.mkdirp(path.dirname(outputFile));
+        try {
+            let html = yield fse.readFile(inputFile, { encoding: 'utf-8' });
+            if (!/<html\b/i.test(html)) {
+                html = `
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+	<title>~dev</title>
+  <base href="${baseUrl || '/'}" />
+</head>
+<body>
+${html}
+</body>
+</html>
+`;
+            }
+            yield fse.mkdirp(path.dirname(outputFile));
+            yield fse.writeFile(outputFile, html, { encoding: 'utf-8' });
+        }
+        catch (err) {
+            console.error(err);
+            return null;
+        }
+        yield fse.copy(inputFile, outputFile, {
+            overwrite: true,
+            preserveTimestamps: true,
+        });
+        return {
+            outputFiles: [outputFile],
+        };
+    });
+}
 function copyFile({ inputFile, outputFile }) {
     return __awaiter(this, void 0, void 0, function* () {
         yield fse.mkdirp(path.dirname(outputFile));
@@ -67,7 +103,7 @@ function copyFile({ inputFile, outputFile }) {
         };
     });
 }
-function buildFile({ inputFile, outputFile, postcssConfig }) {
+function buildFile({ inputFile, outputFile, postcssConfig, baseUrl }) {
     return __awaiter(this, void 0, void 0, function* () {
         outputFile = normalizePath(path.resolve(outputFile));
         if (yield getPathStat(outputFile)) {
@@ -77,6 +113,9 @@ function buildFile({ inputFile, outputFile, postcssConfig }) {
         switch (ext) {
             case '.pcss':
                 return buildCss({ inputFile, outputFile, postcssConfig });
+            case '.htm':
+            case '.html':
+                return buildHtml({ inputFile, outputFile, baseUrl });
             default:
                 return copyFile({ inputFile, outputFile });
         }
@@ -86,4 +125,4 @@ function watchFile(options) {
     return buildFile(options);
 }
 
-export { buildCss, buildFile, copyFile, watchFile };
+export { buildCss, buildFile, buildHtml, copyFile, watchFile };
