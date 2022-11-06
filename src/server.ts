@@ -182,8 +182,9 @@ async function _startServer({
           filePaths.push(filePath)
 
           if (await getPathStat(filePath)) {
-            const Component = requireNoCache(filePath).default
-            const { head, html } = Component.render()
+            const { default: Component, preload } = requireNoCache(filePath)
+            const props = preload && await preload()
+            const { head, html } = Component.render(props)
             const clientJsHref = svelteClientUrl + urlPath + '.js'
             const clientCssHref = svelteClientUrl + urlPath + '.css'
 
