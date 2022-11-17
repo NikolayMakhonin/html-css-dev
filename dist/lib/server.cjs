@@ -38,7 +38,7 @@ function requireNoCache(module) {
     delete require.cache[require.resolve(module)];
     return require(module);
 }
-function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rollupConfigPath, publicDir, rootDir, svelteRootUrl, svelteClientUrl, svelteServerDir, watchPatterns, baseUrl, }) {
+function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rollupConfigPaths, publicDir, rootDir, svelteRootUrl, svelteClientUrl, svelteServerDir, watchPatterns, baseUrl, }) {
     return tslib.__awaiter(this, void 0, void 0, function* () {
         const unhandledErrorsCode = yield fse__default["default"].readFile(
         // eslint-disable-next-line node/no-missing-require
@@ -61,9 +61,16 @@ function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rol
         let rollupConfigs;
         let rollupWatcher;
         let rollupInput;
-        if (rollupConfigPath) {
-            const result = yield loadAndParseConfigFile__default["default"](path__default["default"].resolve(rollupConfigPath));
-            rollupConfigs = result.options;
+        if (rollupConfigPaths) {
+            const results = yield Promise.all(rollupConfigPaths.map(rollupConfigPath => {
+                return loadAndParseConfigFile__default["default"](path__default["default"].resolve(rollupConfigPath));
+            }));
+            rollupConfigs = results.flatMap(result => {
+                return Array.isArray(result.options)
+                    ? result.options
+                    : [result.options];
+            })
+                .filter(o => o);
         }
         console.debug('port=', port);
         console.debug('publicDir=', publicDir);
@@ -152,8 +159,12 @@ function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rol
                     const filePath = path__default["default"].resolve(svelteServerDir + urlPath + '.js');
                     filePaths.push(filePath);
                     if (yield helpers_common.getPathStat(filePath)) {
-                        const Component = requireNoCache(filePath).default;
-                        const { head, html } = Component.render();
+                        const { default: Component, preload } = requireNoCache(filePath);
+                        const props = typeof preload === 'function'
+                            ? yield preload()
+                            : preload;
+                        const propsJson = JSON.stringify(props);
+                        const { head, html } = Component.render(props);
                         const clientJsHref = svelteClientUrl + urlPath + '.js';
                         const clientCssHref = svelteClientUrl + urlPath + '.css';
                         // noinspection NpmUsedModulesInstalled
@@ -226,13 +237,15 @@ function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rol
 ${html}
 <script type='module' defer>
 	import Component from '${clientJsHref}';
-
-	new Component({
+  var props = ${propsJson};
+  
+  new Component({
 	  target: document.body,
-	  hydrate: true,
-	});
-
-	console.log('hydrated')
+    hydrate: true,
+    props,
+  });
+  
+  console.log('hydrated');
 </script>
 </body>
 </html>

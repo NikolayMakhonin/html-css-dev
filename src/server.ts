@@ -25,7 +25,7 @@ export type StartServerArgs = {
   liveReloadPort?: number,
   sourceMap?: SourceMapType,
   srcDir: string,
-  rollupConfigPath: string,
+  rollupConfigPaths: string[],
   publicDir: string,
   rootDir: string,
   svelteRootUrl: string,
@@ -41,7 +41,7 @@ async function _startServer({
   liveReloadPort,
   sourceMap,
   srcDir,
-  rollupConfigPath,
+  rollupConfigPaths,
   publicDir,
   rootDir,
   svelteRootUrl,
@@ -77,9 +77,16 @@ async function _startServer({
   let rollupWatcher: RollupWatcherExt
   let rollupInput: string
 
-  if (rollupConfigPath) {
-    const result = await loadAndParseConfigFile(path.resolve(rollupConfigPath))
-    rollupConfigs = result.options
+  if (rollupConfigPaths) {
+    const results = await Promise.all(rollupConfigPaths.map(rollupConfigPath => {
+      return loadAndParseConfigFile(path.resolve(rollupConfigPath))
+    }))
+    rollupConfigs = results.flatMap(result => {
+      return Array.isArray(result.options)
+        ? result.options
+        : [result.options]
+    })
+      .filter(o => o)
   }
 
   console.debug('port=', port)
@@ -183,7 +190,10 @@ async function _startServer({
 
           if (await getPathStat(filePath)) {
             const { default: Component, preload } = requireNoCache(filePath)
-            const props = preload && await preload()
+            const props = typeof preload === 'function'
+              ? await preload()
+              : preload
+            const propsJson = JSON.stringify(props)
             const { head, html } = Component.render(props)
             const clientJsHref = svelteClientUrl + urlPath + '.js'
             const clientCssHref = svelteClientUrl + urlPath + '.css'
@@ -258,13 +268,15 @@ async function _startServer({
 ${html}
 <script type='module' defer>
 	import Component from '${clientJsHref}';
-
-	new Component({
+  var props = ${propsJson};
+  
+  new Component({
 	  target: document.body,
-	  hydrate: true,
-	});
-
-	console.log('hydrated')
+    hydrate: true,
+    props,
+  });
+  
+  console.log('hydrated');
 </script>
 </body>
 </html>

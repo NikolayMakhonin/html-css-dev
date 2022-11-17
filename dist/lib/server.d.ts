@@ -7,7 +7,7 @@ export declare type StartServerArgs = {
     liveReloadPort?: number;
     sourceMap?: SourceMapType;
     srcDir: string;
-    rollupConfigPath: string;
+    rollupConfigPaths: string[];
     publicDir: string;
     rootDir: string;
     svelteRootUrl: string;
