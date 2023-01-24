@@ -190,7 +190,7 @@ async function _startServer({
           filePaths.push(filePath)
 
           if (await getPathStat(filePath)) {
-            const { default: Component, preload } = requireNoCache(filePath)
+            const { 'default': Component, preload } = requireNoCache(filePath)
             const props = typeof preload === 'function'
               ? await preload()
               : preload

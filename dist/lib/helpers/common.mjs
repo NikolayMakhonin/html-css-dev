@@ -54,7 +54,7 @@ function removeEmptyDirs(dir) {
                 });
             }
             catch (err) {
-                if (fse.existsSync(dir)) {
+                if (yield getPathStat(dir)) {
                     throw err;
                 }
             }
@@ -64,7 +64,7 @@ function removeEmptyDirs(dir) {
 }
 function removePath(_path) {
     return __awaiter(this, void 0, void 0, function* () {
-        if (fse.existsSync(_path)) {
+        if (yield getPathStat(_path)) {
             yield fse.rm(_path, { recursive: true, force: true });
             yield removeEmptyDirs(path.dirname(_path));
             // await tryRun(5, 500, () => removeEmptyDirs(path.dirname(file)))

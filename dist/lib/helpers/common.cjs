@@ -63,7 +63,7 @@ function removeEmptyDirs(dir) {
                 });
             }
             catch (err) {
-                if (fse__default["default"].existsSync(dir)) {
+                if (yield getPathStat(dir)) {
                     throw err;
                 }
             }
@@ -73,7 +73,7 @@ function removeEmptyDirs(dir) {
 }
 function removePath(_path) {
     return tslib.__awaiter(this, void 0, void 0, function* () {
-        if (fse__default["default"].existsSync(_path)) {
+        if (yield getPathStat(_path)) {
             yield fse__default["default"].rm(_path, { recursive: true, force: true });
             yield removeEmptyDirs(path__default["default"].dirname(_path));
             // await tryRun(5, 500, () => removeEmptyDirs(path.dirname(file)))

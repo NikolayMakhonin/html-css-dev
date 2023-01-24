@@ -3,8 +3,6 @@ import express from 'express';
 import 'express-async-errors';
 import path from 'path';
 import fse from 'fs-extra';
-import multimatch from 'multimatch';
-import _liveReload from '@flemist/easy-livereload';
 import { createConfig } from './loadConfig.mjs';
 import { getPathStat, filePathWithoutExtension } from './helpers/common.mjs';
 import { createWatcher } from './Watcher.mjs';
@@ -13,6 +11,7 @@ import loadAndParseConfigFile from 'rollup/dist/loadConfigFile';
 import './prepareBuildFilesOptions.mjs';
 import 'postcss-load-config';
 import 'globby';
+import 'multimatch';
 import './prepareBuildFileOptions.mjs';
 import './helpers/build.mjs';
 import 'postcss';
@@ -64,20 +63,21 @@ function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rol
         console.debug('rootDir=', rootDir);
         const server = express();
         server.disable('x-powered-by');
-        if (liveReload) {
-            const liveReloadInstance = _liveReload({
-                watchDirs: [publicDir, rootDir].filter(o => o),
-                checkFunc: (file) => {
-                    if (multimatch([file], watchPatterns).length === 0) {
-                        return;
-                    }
-                    console.log('[LiveReload] ' + file);
-                    return true;
-                },
-                port: liveReloadPort,
-            });
-            server.use(liveReloadInstance);
-        }
+        // Temporary disabled because of "Denial of Service in ws" in the npm audit
+        // if (liveReload) {
+        //   const liveReloadInstance = _liveReload({
+        //     watchDirs: [publicDir, rootDir].filter(o => o),
+        //     checkFunc: (file) => {
+        //       if (multimatch([file], watchPatterns).length === 0) {
+        //         return
+        //       }
+        //       console.log('[LiveReload] ' + file)
+        //       return true
+        //     },
+        //     port: liveReloadPort,
+        //   })
+        //   server.use(liveReloadInstance)
+        // }
         function fileExists(filePath) {
             return __awaiter(this, void 0, void 0, function* () {
                 if (!(yield getPathStat(filePath))) {
@@ -146,7 +146,7 @@ function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rol
                     const filePath = path.resolve(svelteServerDir + urlPath + '.js');
                     filePaths.push(filePath);
                     if (yield getPathStat(filePath)) {
-                        const { default: Component, preload } = requireNoCache(filePath);
+                        const { 'default': Component, preload } = requireNoCache(filePath);
                         const props = typeof preload === 'function'
                             ? yield preload()
                             : preload;

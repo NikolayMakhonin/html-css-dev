@@ -1,6 +1,6 @@
 {
   "name": "@flemist/html-css-dev",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Tool for fast develop web pages on html+css or postcss",
   "main": "dist/lib/index.cjs",
   "module": "dist/lib/index.mjs",

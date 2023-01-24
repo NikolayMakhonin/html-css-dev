@@ -53,7 +53,7 @@ export async function removeEmptyDirs(dir: string) {
       })
     }
     catch (err) {
-      if (fse.existsSync(dir)) {
+      if (await getPathStat(dir)) {
         throw err
       }
     }
@@ -62,7 +62,7 @@ export async function removeEmptyDirs(dir: string) {
 }
 
 export async function removePath(_path: string) {
-  if (fse.existsSync(_path)) {
+  if (await getPathStat(_path)) {
     await fse.rm(_path, { recursive: true, force: true })
     await removeEmptyDirs(path.dirname(_path))
     // await tryRun(5, 500, () => removeEmptyDirs(path.dirname(file)))
