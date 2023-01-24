@@ -4,8 +4,8 @@ import express from 'express'
 import 'express-async-errors'
 import path from 'path'
 import fse from 'fs-extra'
-import multimatch from 'multimatch'
-import _liveReload from '@flemist/easy-livereload'
+// import multimatch from 'multimatch'
+// import _liveReload from '@flemist/easy-livereload'
 import {Config, createConfig} from './loadConfig'
 import {filePathWithoutExtension, getPathStat} from 'src/helpers/common'
 import {createWatcher} from 'src/Watcher'
@@ -96,20 +96,21 @@ async function _startServer({
   const server = express()
   server.disable('x-powered-by')
 
-  if (liveReload) {
-    const liveReloadInstance = _liveReload({
-      watchDirs: [publicDir, rootDir].filter(o => o),
-      checkFunc: (file) => {
-        if (multimatch([file], watchPatterns).length === 0) {
-          return
-        }
-        console.log('[LiveReload] ' + file)
-        return true
-      },
-      port: liveReloadPort,
-    })
-    server.use(liveReloadInstance)
-  }
+  // Temporary disabled because of "Denial of Service in ws" in the npm audit
+  // if (liveReload) {
+  //   const liveReloadInstance = _liveReload({
+  //     watchDirs: [publicDir, rootDir].filter(o => o),
+  //     checkFunc: (file) => {
+  //       if (multimatch([file], watchPatterns).length === 0) {
+  //         return
+  //       }
+  //       console.log('[LiveReload] ' + file)
+  //       return true
+  //     },
+  //     port: liveReloadPort,
+  //   })
+  //   server.use(liveReloadInstance)
+  // }
 
   async function fileExists(filePath) {
     if (!await getPathStat(filePath)) {
