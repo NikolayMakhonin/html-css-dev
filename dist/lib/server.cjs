@@ -173,6 +173,7 @@ function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rol
 	<meta charset="UTF-8" />
 	<title>~dev</title>
   <base href="${baseUrl || '/'}" />
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
 	<!-- region preload -->
 	<style>
 		/* Hide page while loading css */
