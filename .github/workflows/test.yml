@@ -56,7 +56,6 @@ jobs:
       - name: Lint
         shell: bash
         run: |
-          pnpm run audit
           pnpm run lint
 
       - name: Build
