@@ -13,7 +13,7 @@ const _configDefault = {
         svelteRootUrl: void 0,
         svelteServerDir: void 0,
         svelteClientUrl: void 0,
-        rollupConfigPaths: void 0,
+        rollupConfigs: void 0,
         port: 3522,
         liveReload: false,
         liveReloadPort: 34426,

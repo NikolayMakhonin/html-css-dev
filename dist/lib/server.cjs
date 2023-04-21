@@ -35,7 +35,7 @@ function requireNoCache(module) {
     delete require.cache[require.resolve(module)];
     return require(module);
 }
-function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rollupConfigPaths, publicDir, rootDir, svelteRootUrl, svelteClientUrl, svelteServerDir, watchPatterns, baseUrl, }) {
+function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rollupConfigs: _rollupConfigs, publicDir, rootDir, svelteRootUrl, svelteClientUrl, svelteServerDir, watchPatterns, baseUrl, }) {
     return tslib.__awaiter(this, void 0, void 0, function* () {
         const unhandledErrorsCode = yield fse__default["default"].readFile(
         // eslint-disable-next-line node/no-missing-require
@@ -58,9 +58,11 @@ function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rol
         let rollupConfigs;
         let rollupWatcher;
         let rollupInput;
-        if (rollupConfigPaths) {
-            const results = yield Promise.all(rollupConfigPaths.map(rollupConfigPath => {
-                return loadAndParseConfigFile__default["default"](path__default["default"].resolve(rollupConfigPath));
+        if (_rollupConfigs) {
+            const results = yield Promise.all(_rollupConfigs.map(_rollupConfig => {
+                return typeof _rollupConfig === 'string'
+                    ? loadAndParseConfigFile__default["default"](path__default["default"].resolve(_rollupConfig))
+                    : { options: _rollupConfig };
             }));
             rollupConfigs = results.flatMap(result => {
                 return Array.isArray(result.options)
