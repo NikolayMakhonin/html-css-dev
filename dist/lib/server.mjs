@@ -24,7 +24,7 @@ function requireNoCache(module) {
     delete require.cache[require.resolve(module)];
     return require(module);
 }
-function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rollupConfigPaths, publicDir, rootDir, svelteRootUrl, svelteClientUrl, svelteServerDir, watchPatterns, baseUrl, }) {
+function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rollupConfigs: _rollupConfigs, publicDir, rootDir, svelteRootUrl, svelteClientUrl, svelteServerDir, watchPatterns, baseUrl, }) {
     return __awaiter(this, void 0, void 0, function* () {
         const unhandledErrorsCode = yield fse.readFile(
         // eslint-disable-next-line node/no-missing-require
@@ -47,9 +47,11 @@ function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rol
         let rollupConfigs;
         let rollupWatcher;
         let rollupInput;
-        if (rollupConfigPaths) {
-            const results = yield Promise.all(rollupConfigPaths.map(rollupConfigPath => {
-                return loadAndParseConfigFile(path.resolve(rollupConfigPath));
+        if (_rollupConfigs) {
+            const results = yield Promise.all(_rollupConfigs.map(_rollupConfig => {
+                return typeof _rollupConfig === 'string'
+                    ? loadAndParseConfigFile(path.resolve(_rollupConfig))
+                    : { options: _rollupConfig };
             }));
             rollupConfigs = results.flatMap(result => {
                 return Array.isArray(result.options)
@@ -162,6 +164,7 @@ function _startServer({ port, liveReload, liveReloadPort, sourceMap, srcDir, rol
 	<meta charset="UTF-8" />
 	<title>~dev</title>
   <base href="${baseUrl || '/'}" />
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
 	<!-- region preload -->
 	<style>
 		/* Hide page while loading css */

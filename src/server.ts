@@ -25,7 +25,7 @@ export type StartServerArgs = {
   liveReloadPort?: number,
   sourceMap?: SourceMapType,
   srcDir: string,
-  rollupConfigPaths: string[],
+  rollupConfigs: (string|RollupWatchOptions)[],
   publicDir: string,
   rootDir: string,
   svelteRootUrl: string,
@@ -41,7 +41,7 @@ async function _startServer({
   liveReloadPort,
   sourceMap,
   srcDir,
-  rollupConfigPaths,
+  rollupConfigs: _rollupConfigs,
   publicDir,
   rootDir,
   svelteRootUrl,
@@ -77,9 +77,11 @@ async function _startServer({
   let rollupWatcher: RollupWatcherExt
   let rollupInput: string
 
-  if (rollupConfigPaths) {
-    const results = await Promise.all(rollupConfigPaths.map(rollupConfigPath => {
-      return loadAndParseConfigFile(path.resolve(rollupConfigPath))
+  if (_rollupConfigs) {
+    const results = await Promise.all(_rollupConfigs.map(_rollupConfig => {
+      return typeof _rollupConfig === 'string'
+        ? loadAndParseConfigFile(path.resolve(_rollupConfig))
+        : {options: _rollupConfig}
     }))
     rollupConfigs = results.flatMap(result => {
       return Array.isArray(result.options)
